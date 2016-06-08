@@ -19,8 +19,8 @@ import (
 // Client handles communication with mailchimp servers
 type Client struct {
 	token      string
-	ApiURL     string
-	HttpClient *http.Client
+	APIURL     string
+	HTTPClient *http.Client
 }
 
 // NewClient returns a new Mailchimp client with your token
@@ -38,8 +38,8 @@ func NewClient(token string) *Client {
 	httpclient := &http.Client{}
 	return &Client{
 		token:      token,
-		ApiURL:     apiurl,
-		HttpClient: httpclient,
+		APIURL:     apiurl,
+		HTTPClient: httpclient,
 	}
 }
 
@@ -53,7 +53,7 @@ type Parameters map[string]interface{}
 // It returns the body as []byte
 func (c *Client) get(resource string, parameters map[string]interface{}) ([]byte, error) {
 
-	req, err := http.NewRequest("GET", singleJoiningSlash(c.ApiURL, resource), nil)
+	req, err := http.NewRequest("GET", singleJoiningSlash(c.APIURL, resource), nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -80,7 +80,7 @@ func (c *Client) post(resource string, parameters map[string]interface{}, data i
 	}
 
 	body := bytes.NewBuffer(js)
-	req, err := http.NewRequest("POST", singleJoiningSlash(c.ApiURL, resource), body)
+	req, err := http.NewRequest("POST", singleJoiningSlash(c.APIURL, resource), body)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -107,7 +107,7 @@ func (c *Client) patch(resource string, parameters map[string]interface{}, data 
 	}
 
 	body := bytes.NewBuffer(js)
-	req, err := http.NewRequest("PATCH", singleJoiningSlash(c.ApiURL, resource), body)
+	req, err := http.NewRequest("PATCH", singleJoiningSlash(c.APIURL, resource), body)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -135,7 +135,7 @@ func (c *Client) put(resource string, parameters map[string]interface{}, data in
 	}
 
 	body := bytes.NewBuffer(js)
-	req, err := http.NewRequest("PUT", singleJoiningSlash(c.ApiURL, resource), body)
+	req, err := http.NewRequest("PUT", singleJoiningSlash(c.APIURL, resource), body)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -152,7 +152,7 @@ func (c *Client) put(resource string, parameters map[string]interface{}, data in
 // delete prepares a DELETE request to a resource
 func (c *Client) delete(resource string) error {
 
-	req, err := http.NewRequest("DELETE", singleJoiningSlash(c.ApiURL, resource), nil)
+	req, err := http.NewRequest("DELETE", singleJoiningSlash(c.APIURL, resource), nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -175,7 +175,7 @@ func (c *Client) do(request *http.Request) ([]byte, error) {
 		request.SetBasicAuth("OAuthToken", c.token)
 	}
 
-	resp, err := c.HttpClient.Do(request)
+	resp, err := c.HTTPClient.Do(request)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"error": err.Error(),
@@ -195,7 +195,7 @@ func (c *Client) do(request *http.Request) ([]byte, error) {
 		}
 		return body, nil
 
-		// normal repsonse for DELETE requests
+	// normal repsonse for all DELETE requests and some POST request.
 	case http.StatusNoContent:
 		return []byte{}, nil
 
