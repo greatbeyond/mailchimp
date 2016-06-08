@@ -22,7 +22,7 @@ const (
 	ListVisibilityPrivate ListVisibility = "prv"
 )
 
-const LISTS_URL = "/lists"
+const ListsURL = "/lists"
 
 // List defines a Mailchimp list as received from server
 type List struct {
@@ -130,7 +130,7 @@ type ListStats struct {
 }
 
 func (c *Client) NewList(data *CreateList) (*List, error) {
-	response, err := c.post(LISTS_URL, nil, data)
+	response, err := c.post(ListsURL, nil, data)
 	if err != nil {
 		log.Debug(err.Error, caller())
 		return nil, err
@@ -149,7 +149,7 @@ func (c *Client) NewList(data *CreateList) (*List, error) {
 }
 
 func (c *Client) GetLists() ([]*List, error) {
-	response, err := c.get(LISTS_URL, nil)
+	response, err := c.get(ListsURL, nil)
 	if err != nil {
 		log.Debug(err.Error, caller())
 		return nil, err
@@ -189,7 +189,7 @@ func (c *Client) GetLists() ([]*List, error) {
 
 // GetList returns a single list by id
 func (c *Client) GetList(id string) (*List, error) {
-	response, err := c.get(slashJoin(LISTS_URL, id), nil)
+	response, err := c.get(slashJoin(ListsURL, id), nil)
 	if err != nil {
 		log.Debug(err.Error, caller())
 		return nil, err
@@ -218,7 +218,7 @@ func (l *List) Update(data *UpdateList) (*List, error) {
 		return nil, ErrorNoClient
 	}
 
-	response, err := l.client.patch(slashJoin(LISTS_URL, l.ID), nil, data)
+	response, err := l.client.patch(slashJoin(ListsURL, l.ID), nil, data)
 	if err != nil {
 		log.Debug(err.Error, caller())
 		return nil, err
@@ -243,7 +243,7 @@ func (l *List) Delete() error {
 		return ErrorNoClient
 	}
 
-	return l.client.delete(slashJoin(LISTS_URL, l.ID))
+	return l.client.delete(slashJoin(ListsURL, l.ID))
 }
 
 // DateCreated converts DateCreatedString to a time.Time object
