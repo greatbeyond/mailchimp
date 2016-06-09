@@ -120,7 +120,7 @@ func (c *Client) CreateMember(data *CreateMember, listID string) (*Member, error
 		return nil, err
 	}
 
-	response, err := c.post(slashJoin(LISTS_URL, listID, MembersURL), nil, data)
+	response, err := c.post(slashJoin(ListsURL, listID, MembersURL), nil, data)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -147,7 +147,7 @@ func (c *Client) CreateMember(data *CreateMember, listID string) (*Member, error
 func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, error) {
 
 	p := requestParameters(params)
-	response, err := c.get(slashJoin(LISTS_URL, listID, MembersURL), p)
+	response, err := c.get(slashJoin(ListsURL, listID, MembersURL), p)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -202,7 +202,7 @@ func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, err
 }
 
 func (c *Client) GetMember(id string, listID string) (*Member, error) {
-	response, err := c.get(slashJoin(LISTS_URL, listID, MembersURL, id), nil)
+	response, err := c.get(slashJoin(ListsURL, listID, MembersURL, id), nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   listID,
@@ -233,7 +233,7 @@ func (m *Member) Delete() error {
 	if m.client == nil {
 		return ErrorNoClient
 	}
-	err := m.client.delete(slashJoin(LISTS_URL, m.ListID, MembersURL, m.ID))
+	err := m.client.delete(slashJoin(ListsURL, m.ListID, MembersURL, m.ID))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   m.ListID,
@@ -255,7 +255,7 @@ func (m *Member) Update(data *UpdateMember) (*Member, error) {
 
 	// If the member was previously deleted we need to use a PUT request,
 	// otherwhise the API will tell us it's gone.
-	response, err := m.client.put(slashJoin(LISTS_URL, m.ListID, MembersURL, m.ID), nil, data)
+	response, err := m.client.put(slashJoin(ListsURL, m.ListID, MembersURL, m.ID), nil, data)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   m.ListID,
