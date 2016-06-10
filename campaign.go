@@ -58,7 +58,7 @@ type Campaign struct {
 	ContentType string `                     json:"content_type"`
 
 	// List settings for the campaign.
-	Recipients *CampaignRecipient `          json:"recipients"`
+	Recipients *CampaignRecipients `          json:"recipients"`
 
 	// The settings for your campaign, including subject, from name, reply-to address, and more.
 	Settings *CampaignSettings `             json:"settings"`
@@ -91,85 +91,85 @@ type Campaign struct {
 // CampaignSettings defines settings for a campaign
 type CampaignSettings struct {
 	// The subject line for the campaign.
-	SubjectLine string `         json:"subject_line"`
+	SubjectLine string `         json:"subject_line,omitempty"`
 
 	// The title of the campaign.
-	Title string `               json:"title"`
+	Title string `               json:"title,omitempty"`
 
 	// The ‘from’ name on the campaign (not an email address).
-	FromName string `            json:"from_name"`
+	FromName string `            json:"from_name,omitempty"`
 
 	// The reply-to email address for the campaign.
-	ReplyTo string `             json:"reply_to"`
+	ReplyTo string `             json:"reply_to,omitempty"`
 
 	// Use MailChimp Conversation feature to manage out-of-office replies.
-	UseConversation bool `       json:"use_conversation"`
+	UseConversation bool `       json:"use_conversation,omitempty"`
 
 	// The campaign’s custom ‘To’ name. Typically the first name merge field.
-	ToName string `              json:"to_name"`
+	ToName string `              json:"to_name,omitempty"`
 
 	// If the campaign is listed in a folder, the id for that folder.
-	FolderID string `            json:"folder_id"`
+	FolderID string `            json:"folder_id,omitempty"`
 
 	// Whether MailChimp authenticated the campaign. Defaults to true.
-	Authenticate bool `          json:"authenticate"`
+	Authenticate bool `          json:"authenticate,omitempty"`
 
 	// Automatically append MailChimp’s default footer to the campaign.
-	AutoFooter bool `            json:"auto_footer"`
+	AutoFooter bool `            json:"auto_footer,omitempty"`
 
 	// Automatically inline the CSS included with the campaign content.
-	InlineCSS bool `             json:"inline_css"`
+	InlineCSS bool `             json:"inline_css,omitempty"`
 
 	// Automatically tweet a link to the campaign archive page when the campaign is sent.
-	AutoTweet bool `             json:"auto_tweet"`
+	AutoTweet bool `             json:"auto_tweet,omitempty"`
 
 	// An array of Facebook page ids to auto-post to.
-	AutoFbPost []string `        json:"auto_fb_post"`
+	AutoFbPost []string `        json:"auto_fb_post,omitempty"`
 
 	// Allows Facebook comments on the campaign (also force-enables the Campaign Archive toolbar). Defaults to true.
-	FbComments bool `            json:"fb_comments"`
+	FbComments bool `            json:"fb_comments,omitempty"`
 
 	// Send this campaign using Timewarp.
-	Timewarp bool `              json:"timewarp"`
+	Timewarp bool `              json:"timewarp,omitempty"`
 
 	// The id for the template used in this campaign.
-	TemplateID int `             json:"template_id"`
+	TemplateID int `             json:"template_id,omitempty"`
 
 	// Whether the campaign uses the drag-and-drop editor.
-	DragAndDrop bool `           json:"drag_and_drop"`
+	DragAndDrop bool `           json:"drag_and_drop,omitempty"`
 }
 
 // CampaignTracking settings
 type CampaignTracking struct {
 	// Whether to track opens. Defaults to true. Cannot be set to false for variate campaigns.
-	Opens bool `                 json:"opens"`
+	Opens bool `                 json:"opens,omitempty"`
 
 	// Whether to track clicks in the HTML version of the campaign. Defaults to true. Cannot be set to false for variate campaigns.
-	HTMLClicks bool `            json:"html_clicks"`
+	HTMLClicks bool `            json:"html_clicks,omitempty"`
 
 	// Whether to track clicks in the plain-text version of the campaign. Defaults to true. Cannot be set to false for variate campaigns.
-	TextClicks bool `            json:"text_clicks"`
+	TextClicks bool `            json:"text_clicks,omitempty"`
 
 	// Whether to enable Goal tracking.
-	GoalTracking bool `          json:"goal_tracking"`
+	GoalTracking bool `          json:"goal_tracking,omitempty"`
 
 	// Whether to enable E-commerce tracking.
-	Ecomm360 bool `              json:"ecomm360"`
+	Ecomm360 bool `              json:"ecomm360,omitempty"`
 
 	// The custom slug for Google Analytics tracking (max of 50 bytes).
-	GoogleAnalytics string `     json:"google_analytics"`
+	GoogleAnalytics string `     json:"google_analytics,omitempty"`
 
 	// The custom slug for ClickTale tracking (max of 50 bytes).
-	Clicktale string `           json:"clicktale"`
+	Clicktale string `           json:"clicktale,omitempty"`
 
 	// Salesforce tracking options for a campaign. Must be using MailChimp’s built-in Salesforce integration.
-	Salesforce interface{} `     json:"salesforce"`
+	Salesforce interface{} `     json:"salesforce,omitempty"`
 
 	// Highrise tracking options for a campaign. Must be using MailChimp’s built-in Highrise integration.
-	Highrise interface{} `       json:"highrise"`
+	Highrise interface{} `       json:"highrise,omitempty"`
 
 	// Capsule tracking options for a campaign. Must be using MailChimp’s built-in Capsule integration.
-	Capsule interface{} `        json:"capsule"`
+	Capsule interface{} `        json:"capsule,omitempty"`
 }
 
 // CampaignDeliveryStatus updates on campaigns in the process of sending.
@@ -183,10 +183,11 @@ type CreateCampaign struct {
 	// There are four types of campaigns you can create
 	// in MailChimp. A/B Split campaigns have been
 	// deprecated and variate campaigns should be used instead.
+	// Possible values: regular, plaintext, absplit, rss, variate
 	Type string `                             json:"type"`
 
 	// List settings for the campaign.
-	Recipients []*CampaignRecipient `         json:"recipients,omitempty"`
+	Recipients *CampaignRecipients `         json:"recipients,omitempty"`
 
 	// The settings for your campaign, including subject,
 	// from name, reply-to address, and more.
@@ -222,65 +223,65 @@ type CreateCampaign struct {
 // different requiered fields (checked in function)
 type UpdateCampaign CreateCampaign
 
-// CampaignRecipient defines default fields for a reciptient
-type CampaignRecipient struct {
+// CampaignRecipients defines default fields for a reciptient
+type CampaignRecipients struct {
 	// The unique list id.
-	ListID string `              json:"list_id"`
+	ListID string `              json:"list_id,omitempty"`
 
 	// The name of the list.
-	ListName string `            json:"list_name"`
+	ListName string `            json:"list_name,omitempty"`
 
 	// A string marked-up with HTML explaining the
 	// segment used for the campaign in plain English.
-	SegmentText string `         json:"segment_text"`
+	SegmentText string `         json:"segment_text,omitempty"`
 
 	// Count of the recipients on the associated list. Formatted as an integer.
-	RecipientCount int `         json:"recipient_count"`
+	RecipientCount int `         json:"recipient_count,omitempty"`
 
 	// An object representing all segmentation options.
-	SegmentOpts interface{} `    json:"segment_opts"`
+	SegmentOpts interface{} `    json:"segment_opts,omitempty"`
 }
 
 // CampaignCreateSettings Required fields for campaing creation settings
 type CampaignCreateSettings struct {
 	// The subject line for the campaign.
-	SubjectLine string `         json:"subject_line"`
+	SubjectLine string `         json:"subject_line,omitempty"`
 
 	// The title of the campaign.
-	Title string `               json:"title"`
+	Title string `               json:"title,omitempty"`
 
 	// The ‘from’ name on the campaign (not an email address).
-	FromName string `            json:"from_name"`
+	FromName string `            json:"from_name,omitempty"`
 
 	// The reply-to email address for the campaign.
-	ReplyTo string `             json:"reply_to"`
+	ReplyTo string `             json:"reply_to,omitempty"`
 
 	// Use MailChimp Conversation feature to manage out-of-office replies.
-	UseConversation bool `       json:"use_conversation"`
+	UseConversation bool `       json:"use_conversation,omitempty"`
 
 	// The campaign’s custom ‘To’ name. Typically the first name merge field.
-	ToName string `              json:"to_name"`
+	ToName string `              json:"to_name,omitempty"`
 
 	// If the campaign is listed in a folder, the id for that folder.
-	FolderID string `            json:"folder_id"`
+	FolderID string `            json:"folder_id,omitempty"`
 
 	// Whether MailChimp authenticated the campaign. Defaults to true.
-	Authenticate bool `          json:"authenticate"`
+	Authenticate bool `          json:"authenticate,omitempty"`
 
 	// Automatically append MailChimp’s default footer to the campaign.
-	AutoFooter bool `            json:"auto_footer"`
+	AutoFooter bool `            json:"auto_footer,omitempty"`
 
 	// Automatically inline the CSS included with the campaign content.
-	InlineCSS bool `             json:"inline_css"`
+	InlineCSS bool `             json:"inline_css,omitempty"`
 
 	// Automatically tweet a link to the campaign archive page when the campaign is sent.
-	AutoTweet bool `             json:"auto_tweet"`
+	AutoTweet bool `             json:"auto_tweet,omitempty"`
 
 	// An array of Facebook page ids to auto-post to.
-	AutoFbPost []string `        json:"auto_fb_post"`
+	AutoFbPost []string `        json:"auto_fb_post,omitempty"`
 
 	// Allows Facebook comments on the campaign (also force-enables the Campaign Archive toolbar). Defaults to true.
-	FbComments bool `            json:"fb_comments"`
+	FbComments bool `            json:"fb_comments,omitempty"`
 }
 
 // NewCampaign creates a new campaign via mailchimp api v3
@@ -517,6 +518,8 @@ type CampaignContent struct {
 	HTML string `                 json:"html"`
 }
 
+// CampaignContentEdit is documented here:
+// http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/content/
 type CampaignContentEdit struct {
 	// The plain-text portion of the campaign. If left unspecified, we’ll generate this automatically.
 	PlainText string `          json:"plain_text"`
