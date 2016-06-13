@@ -500,7 +500,7 @@ func (c *Campaign) Delete() error {
 // CampaignContent can be retrived
 type CampaignContent struct {
 	// Content options for multivariate campaigns.
-	VariateContents struct {
+	VariateContents *struct {
 		// Label used to identify the content option.
 		ContentLabel string `     json:"content_label,omitempty"`
 
@@ -531,7 +531,7 @@ type CampaignContentEdit struct {
 	URL string `                json:"url,omitempty"`
 
 	// Use this template to generate the HTML content of the campaign
-	Template struct {
+	Template *struct {
 		// The id of the template to use.
 		ID int `                json:"id,omitempty"`
 
@@ -540,7 +540,7 @@ type CampaignContentEdit struct {
 	} `json:"template,omitempty"`
 
 	// Available when uploading an archive to create campaign content. The archive should include all campaign content and images. Learn more.
-	Archive struct {
+	Archive *struct {
 		// he base64-encoded representation of the archive file.
 		ArchiveContent string `json:"archive_content,omitempty"`
 
