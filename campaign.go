@@ -502,56 +502,56 @@ type CampaignContent struct {
 	// Content options for multivariate campaigns.
 	VariateContents struct {
 		// Label used to identify the content option.
-		ContentLabel string `     json:"content_label"`
+		ContentLabel string `     json:"content_label,omitempty"`
 
 		// The plain-text portion of the campaign. If left unspecified, we’ll generate this automatically.
-		PlainText string `        json:"plain_text"`
+		PlainText string `        json:"plain_text,omitempty"`
 
 		// The raw HTML for the campaign.
-		HTML string `             json:"html"`
-	} `json:"variate_contents"`
+		HTML string `             json:"html,omitempty"`
+	} `json:"variate_contents,omitempty"`
 
 	// The plain-text portion of the campaign. If left unspecified, we’ll generate this automatically.
-	PlainText string `            json:"plain_text"`
+	PlainText string `            json:"plain_text,omitempty"`
 
 	// The raw HTML for the campaign.
-	HTML string `                 json:"html"`
+	HTML string `                 json:"html,omitempty"`
 }
 
 // CampaignContentEdit is documented here:
 // http://developer.mailchimp.com/documentation/mailchimp/reference/campaigns/content/
 type CampaignContentEdit struct {
 	// The plain-text portion of the campaign. If left unspecified, we’ll generate this automatically.
-	PlainText string `          json:"plain_text"`
+	PlainText string `          json:"plain_text,omitempty"`
 
 	// The raw HTML for the campaign.
-	HTML string `               json:"html"`
+	HTML string `               json:"html,omitempty"`
 
 	// When importing a campaign, the URL where the HTML lives.
-	URL string `                json:"url"`
+	URL string `                json:"url,omitempty"`
 
 	// Use this template to generate the HTML content of the campaign
 	Template struct {
 		// The id of the template to use.
-		ID int `                json:"id"`
+		ID int `                json:"id,omitempty"`
 
 		// Content for the sections of the template. Each key should be the unique mc:edit area name from the template.
-		Sections interface{} `  json:"sections"`
-	} `json:"template"`
+		Sections interface{} `  json:"sections,omitempty"`
+	} `json:"template,omitempty"`
 
 	// Available when uploading an archive to create campaign content. The archive should include all campaign content and images. Learn more.
 	Archive struct {
 		// he base64-encoded representation of the archive file.
-		ArchiveContent string `json:"archive_content"`
+		ArchiveContent string `json:"archive_content,omitempty"`
 
 		// The type of encoded file. Defaults to zip.
 		// Possible Values:
 		// 	zip tar.gz tar.bz2 tar tgz tbz
-		ArchiveType string `   json:"archive_type"`
-	} `json:"archive"`
+		ArchiveType string `   json:"archive_type,omitempty"`
+	} `json:"archive,omitempty"`
 
 	// Content options for Multivariate Campaigns. Each content option must provide HTML content and may optionally provide plain text. For campaigns not testing content, only one object should be provided.
-	VariateContents []interface{} `json:"variate_contents"`
+	VariateContents []interface{} `json:"variate_contents,omitempty"`
 }
 
 // GetContent retrives the content for a campaign
