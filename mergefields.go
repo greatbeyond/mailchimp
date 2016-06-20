@@ -7,6 +7,7 @@ package mailchimp
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	log "github.com/Sirupsen/logrus"
@@ -23,11 +24,11 @@ type MergeField struct {
 	// The tag used in MailChimp campaigns and for the /members endpoint.
 	Tag string `json:"tag,omitempty"`
 
-	// The name of the merge field.
+	// The name of the merge field. Max 10 chars.
 	Name string `json:"name"`
 
 	// The type for the merge field.
-	Type string `json:"type"`
+	Type MergeFieldType `json:"type"`
 
 	// The boolean value if the merge field is required.
 	Required bool `json:"required,omitempty"`
@@ -64,6 +65,24 @@ type MergeField struct {
 	client *Client
 }
 
+type MergeFieldType string
+
+const (
+	MergeFieldTypeText       MergeFieldType = "text"
+	MergeFieldTypeNumber     MergeFieldType = "number"
+	MergeFieldTypeAddress    MergeFieldType = "address"
+	MergeFieldTypePhone      MergeFieldType = "phone"
+	MergeFieldTypeEmail      MergeFieldType = "email"
+	MergeFieldTypeDate       MergeFieldType = "date"
+	MergeFieldTypeURL        MergeFieldType = "url"
+	MergeFieldTypeImageurl   MergeFieldType = "imageurl"
+	MergeFieldTypeRadio      MergeFieldType = "radio"
+	MergeFieldTypeDropdown   MergeFieldType = "dropdown"
+	MergeFieldTypeCheckboxes MergeFieldType = "checkboxes"
+	MergeFieldTypeBirthday   MergeFieldType = "birthday"
+	MergeFieldTypeZip        MergeFieldType = "zip"
+)
+
 // CreateMergeField is a alias for MergeField, the keys are the same.
 type CreateMergeField MergeField
 
@@ -89,6 +108,9 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 	if err := missingField(data.Name, "Name"); err != nil {
 		log.Debug(err.Error, caller())
 		return nil, err
+	}
+	if len(data.Name) > 10 {
+		return nil, fmt.Errorf("Name length over limit (10)")
 	}
 
 	if err := missingField(data.Type, "Type"); err != nil {
