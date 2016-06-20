@@ -14,13 +14,17 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/kr/pretty"
 )
+
+const _debug = false
 
 // Client handles communication with mailchimp servers
 type Client struct {
 	token      string
 	APIURL     string
 	HTTPClient *http.Client
+	Batch      *BatchQueue
 }
 
 // NewClient returns a new Mailchimp client with your token
@@ -41,6 +45,27 @@ func NewClient(token string) *Client {
 		APIURL:     apiurl,
 		HTTPClient: httpclient,
 	}
+}
+
+// Clone returns a client with the same preferences.
+// http client (and optional batch operation) is ignored
+func (c *Client) Clone() *Client {
+	return NewClient(c.token)
+}
+
+// NewBatch creates a new batch queue in the client
+func (c *Client) NewBatch() {
+	c.Batch = &BatchQueue{
+		client: c,
+	}
+}
+
+// RunBatch executes a batch and resets the batch queue
+// In addition to running the batch, the batch queue is reset.
+func (c *Client) RunBatch() (*Batch, error) {
+	b := c.Batch
+	c.Batch = nil
+	return b.Run()
 }
 
 // Parameters is an alias for Request parameters map strin interface
@@ -171,8 +196,23 @@ func (c *Client) do(request *http.Request) ([]byte, error) {
 		return nil, fmt.Errorf("can't send nil request")
 	}
 
+	// Do we have a batch operation running currently?
+	if c.Batch != nil {
+		return c.Batch.Do(request)
+	}
+
 	if c.token != "" {
 		request.SetBasicAuth("OAuthToken", c.token)
+	}
+
+	if _debug && request.Body != nil {
+		buf := new(bytes.Buffer)
+		buf.ReadFrom(request.Body)
+		s := buf.String()
+		request.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(s)))
+
+		pretty.Println(request.Method)
+		pretty.Println(s)
 	}
 
 	resp, err := c.HTTPClient.Do(request)
