@@ -39,6 +39,15 @@ type Error struct {
 	// A string that identifies this specific occurrence of the problem.
 	// Please provide this ID when contacting support.
 	Instance string `json:"instance"`
+
+	// A collection of error messages
+	Errors []*ErrorMessage `json:"errors"`
+}
+
+// ErrorMessage contains field specific error information
+type ErrorMessage struct {
+	Field   string `json:"string"`
+	Message string `json:"string"`
 }
 
 // ErrorNoClient will be returned when the receiver has no client
