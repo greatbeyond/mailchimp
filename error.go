@@ -51,7 +51,7 @@ type ErrorMessage struct {
 }
 
 // ErrorNoClient will be returned when the receiver has no client
-// assigned by parent. Always create api objects by reteriveing
+// assigned by parent. Always create api objects by retrieving
 // them from the Client object. You can assign the client manually
 // at creation with Object{client: myClient}.
 var ErrorNoClient = fmt.Errorf("no client assigned by parent")
