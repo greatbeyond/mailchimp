@@ -6,7 +6,9 @@
 package mailchimp
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -30,8 +32,8 @@ const (
 //  client := client.Clone()
 //  client.NewBatch()
 //
-//  // ignore the output, always successful
-//  _, _ = client.CreateList(&mailchimp.CreateList{
+//  // ignore the result, it's a placeholder. Do check the error thoug.
+//  _, err := client.CreateList(&mailchimp.CreateList{
 //      Name: "Batched created list",
 //  })
 //
@@ -48,7 +50,7 @@ type BatchQueue struct {
 	Operations []*BatchOperation `json:"operations"`
 
 	// internal
-	client *Client
+	client MailchimpClient
 }
 
 type Batch struct {
@@ -95,8 +97,28 @@ type BatchOperation struct {
 	OperationID string `json:"operation_id,omitempty"`
 }
 
+func NewBatchQueue(client MailchimpClient) *BatchQueue {
+	return &BatchQueue{
+		client:     client,
+		Operations: []*BatchOperation{},
+	}
+}
+
 // Do adds the operation to the queue
 func (b *BatchQueue) Do(request *http.Request) ([]byte, error) {
+
+	if b.client.Debug() {
+		fmt.Printf("-- BATCH OP %d ------------------\n", len(b.Operations))
+		fmt.Printf("%s: %s\n", request.Method, request.URL)
+		if request.Body != nil {
+			buf := new(bytes.Buffer)
+			buf.ReadFrom(request.Body)
+			s := buf.String()
+			request.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(s)))
+			fmt.Println(s)
+		}
+		fmt.Println("----------------------------")
+	}
 
 	var body string
 	if request.Body != nil {
@@ -104,7 +126,6 @@ func (b *BatchQueue) Do(request *http.Request) ([]byte, error) {
 		body = string(str)
 	}
 
-	// pretty.Println(request)
 	var params map[string]string
 	if request.URL.RawQuery != "" {
 		params = b.paramMap(request.URL.RawQuery)
@@ -119,9 +140,6 @@ func (b *BatchQueue) Do(request *http.Request) ([]byte, error) {
 		Body:   body,
 	}
 
-	if b.Operations == nil {
-		b.Operations = []*BatchOperation{}
-	}
 	b.Operations = append(b.Operations, op)
 
 	return []byte("{}"), nil
@@ -142,7 +160,7 @@ func (b *BatchQueue) paramMap(params string) map[string]string {
 // Run executes a batch and resets the batch queue
 func (b *BatchQueue) Run() (*Batch, error) {
 
-	response, err := b.client.post(batchURL, nil, b)
+	response, err := b.client.Post(batchURL, nil, b)
 	if err != nil {
 		log.Debug(err.Error, caller())
 		return nil, err
@@ -159,7 +177,7 @@ func (b *BatchQueue) Run() (*Batch, error) {
 
 // Get retrieves a single batch status object
 func (b *BatchQueue) Get(id string) (*BatchOperation, error) {
-	response, err := b.client.get(slashJoin(batchURL, id), nil)
+	response, err := b.client.Get(slashJoin(batchURL, id), nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"batch_id": id,

@@ -10,6 +10,8 @@ import (
 	"net/http"
 	"testing"
 
+	t "github.com/greatbeyond/mailchimp.v3/testing"
+
 	check "gopkg.in/check.v1"
 )
 
@@ -25,7 +27,9 @@ type BatchTestSuite struct {
 func (suite *BatchTestSuite) SetUpSuite(c *check.C) {}
 
 func (suite *BatchTestSuite) SetUpTest(c *check.C) {
-	suite.Batch = &BatchQueue{}
+	suite.Batch = &BatchQueue{
+		client: &t.MockClient{},
+	}
 }
 
 func (suite *BatchTestSuite) TearDownTest(c *check.C) {}
@@ -81,6 +85,47 @@ func (suite *BatchTestSuite) Test_Batch_Do_POST(c *check.C) {
 		Path:   "/resoruce/id",
 		Params: nil,
 		Body:   `{"key":"value"}`,
+	})
+
+}
+
+func (suite *BatchTestSuite) Test_Batch_CreateMember(c *check.C) {
+
+	client := NewClient("arandomtoken-us0")
+	client.Debug(true)
+	client.NewBatch()
+
+	_, err := client.CreateMember(&CreateMember{
+		EmailAddress: "test@example.net",
+	}, "123456")
+	c.Assert(err, check.IsNil)
+
+	c.Assert(len(client.Batch.Operations), check.Equals, 1)
+	c.Assert(client.Batch.Operations[0], check.DeepEquals, &BatchOperation{
+		Method: "POST",
+		Path:   "/lists/123456/members",
+		Body:   `{"email_address":"test@example.net"}`,
+	})
+
+}
+
+func (suite *BatchTestSuite) Test_Batch_CreateMergeField(c *check.C) {
+
+	client := NewClient("arandomtoken-us0")
+	client.Debug(true)
+	client.NewBatch()
+
+	_, err := client.CreateMergeField(&CreateMergeField{
+		Name: "TAGNAME",
+		Type: MergeFieldTypeText,
+	}, "123456")
+	c.Assert(err, check.IsNil)
+
+	c.Assert(len(client.Batch.Operations), check.Equals, 1)
+	c.Assert(client.Batch.Operations[0], check.DeepEquals, &BatchOperation{
+		Method: "POST",
+		Path:   "/lists/123456/merge-fields",
+		Body:   `{"name":"TAGNAME","type":"text"}`,
 	})
 
 }

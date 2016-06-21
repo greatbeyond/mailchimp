@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"unicode/utf8"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/antonholmquist/jason"
@@ -21,7 +22,7 @@ type MergeField struct {
 	// An unchanging id for the merge field.
 	MergeID int `json:"merge_id,omitempty"`
 
-	// The tag used in MailChimp campaigns and for the /members endpoint.
+	// The tag used in MailChimp campaigns and for the /fields endpoint.
 	Tag string `json:"tag,omitempty"`
 
 	// The name of the merge field. Max 10 chars.
@@ -49,7 +50,7 @@ type MergeField struct {
 	//   phone_format      string
 	// In a date or birthday field, the format of the date.
 	//   date_format       string
-	// In a radio or dropdown non-group field, the available options for members to pick from.
+	// In a radio or dropdown non-group field, the available options for fields to pick from.
 	//   choices           []string
 	// In a text field, the default length of the text field.
 	//   size              int
@@ -62,7 +63,7 @@ type MergeField struct {
 	ListID string `json:"list_id,omitempty"`
 
 	// Internal
-	client *Client
+	client MailchimpClient
 }
 
 type MergeFieldType string
@@ -90,14 +91,14 @@ type CreateMergeField MergeField
 // different requiered fields (checked in function)
 type UpdateMergeField CreateMergeField
 
-// NewMergeField returns a empty member object
+// NewMergeField returns a empty field object
 func (c *Client) NewMergeField() *MergeField {
 	return &MergeField{
 		client: c,
 	}
 }
 
-// CreateMergeField Creates a member object and inserts it
+// CreateMergeField Creates a field object and inserts it
 func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*MergeField, error) {
 
 	if err := missingField(listID, "listID"); err != nil {
@@ -109,7 +110,7 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		log.Debug(err.Error, caller())
 		return nil, err
 	}
-	if len(data.Name) > 10 {
+	if utf8.RuneCountInString(data.Tag) > 10 {
 		return nil, fmt.Errorf("Name length over limit (10)")
 	}
 
@@ -118,7 +119,7 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		return nil, err
 	}
 
-	response, err := c.post(slashJoin(ListsURL, listID, MergeFieldsURL), nil, data)
+	response, err := c.Post(slashJoin(ListsURL, listID, MergeFieldsURL), nil, data)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -127,8 +128,8 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		return nil, err
 	}
 
-	var member *MergeField
-	err = json.Unmarshal(response, &member)
+	var field *MergeField
+	err = json.Unmarshal(response, &field)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -137,16 +138,16 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		return nil, err
 	}
 
-	member.client = c
+	field.client = c
 
-	return member, nil
+	return field, nil
 }
 
 // GetMergeFields fetches all merge fields
 func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeField, error) {
 
 	p := requestParameters(params)
-	response, err := c.get(slashJoin(ListsURL, listID, MergeFieldsURL), p)
+	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL), p)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -164,7 +165,7 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 		return nil, err
 	}
 
-	_members, err := v.GetValue("members")
+	_fields, err := v.GetValue("fields")
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -173,7 +174,7 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 		return nil, err
 	}
 
-	b, err := _members.Marshal()
+	b, err := _fields.Marshal()
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -182,8 +183,8 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 		return nil, err
 	}
 
-	var members []*MergeField
-	err = json.Unmarshal(b, &members)
+	var fields []*MergeField
+	err = json.Unmarshal(b, &fields)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID": listID,
@@ -192,17 +193,17 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 		return nil, err
 	}
 
-	for _, l := range members {
+	for _, l := range fields {
 		l.client = c
 	}
 
-	return members, nil
+	return fields, nil
 
 }
 
 // GetMergeField retrives a single merge field
 func (c *Client) GetMergeField(id int, listID string) (*MergeField, error) {
-	response, err := c.get(slashJoin(ListsURL, listID, MergeFieldsURL, strconv.Itoa(id)), nil)
+	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL, strconv.Itoa(id)), nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   listID,
@@ -212,8 +213,8 @@ func (c *Client) GetMergeField(id int, listID string) (*MergeField, error) {
 		return nil, err
 	}
 
-	var member *MergeField
-	err = json.Unmarshal(response, &member)
+	var field *MergeField
+	err = json.Unmarshal(response, &field)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   listID,
@@ -223,9 +224,9 @@ func (c *Client) GetMergeField(id int, listID string) (*MergeField, error) {
 		return nil, err
 	}
 
-	member.client = c
+	field.client = c
 
-	return member, nil
+	return field, nil
 }
 
 //Delete remvoes the merge field
@@ -234,7 +235,7 @@ func (m *MergeField) Delete() error {
 	if m.client == nil {
 		return ErrorNoClient
 	}
-	err := m.client.delete(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)))
+	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   m.ListID,
@@ -254,9 +255,9 @@ func (m *MergeField) Update(data *UpdateMergeField) (*MergeField, error) {
 		return nil, ErrorNoClient
 	}
 
-	// If the member was previously deleted we need to use a PUT request,
+	// If the field was previously deleted we need to use a PUT request,
 	// otherwhise the API will tell us it's gone.
-	response, err := m.client.put(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)), nil, data)
+	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)), nil, data)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   m.ListID,
@@ -266,8 +267,8 @@ func (m *MergeField) Update(data *UpdateMergeField) (*MergeField, error) {
 		return nil, err
 	}
 
-	var member *MergeField
-	err = json.Unmarshal(response, &member)
+	var field *MergeField
+	err = json.Unmarshal(response, &field)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"listID":   m.ListID,
@@ -277,7 +278,7 @@ func (m *MergeField) Update(data *UpdateMergeField) (*MergeField, error) {
 		return nil, err
 	}
 
-	member.client = m.client
+	field.client = m.client
 
-	return member, nil
+	return field, nil
 }

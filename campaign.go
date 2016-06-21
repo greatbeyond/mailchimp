@@ -85,7 +85,7 @@ type Campaign struct {
 	DeliveryStatus *CampaignDeliveryStatus ` json:"delivery_status"`
 
 	// Internal
-	client *Client
+	client MailchimpClient
 }
 
 // CampaignSettings defines settings for a campaign
@@ -286,7 +286,7 @@ type CampaignCreateSettings struct {
 
 // NewCampaign creates a new campaign via mailchimp api v3
 func (c *Client) NewCampaign(data *CreateCampaign) (*Campaign, error) {
-	response, err := c.post(CampaignsURL, nil, data)
+	response, err := c.Post(CampaignsURL, nil, data)
 
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
@@ -307,7 +307,7 @@ func (c *Client) NewCampaign(data *CreateCampaign) (*Campaign, error) {
 
 // GetCampaigns retrives all campaigns from mailchimp
 func (c *Client) GetCampaigns() ([]*Campaign, error) {
-	response, err := c.get(CampaignsURL, nil)
+	response, err := c.Get(CampaignsURL, nil)
 
 	v, err := jason.NewObjectFromBytes(response)
 	if err != nil {
@@ -351,7 +351,7 @@ func (c *Client) GetCampaigns() ([]*Campaign, error) {
 
 // GetCampaign retrives a single campaign by id
 func (c *Client) GetCampaign(id string) (*Campaign, error) {
-	response, err := c.get(slashJoin(CampaignsURL, id), nil)
+	response, err := c.Get(slashJoin(CampaignsURL, id), nil)
 
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
@@ -370,7 +370,7 @@ func (c *Client) GetCampaign(id string) (*Campaign, error) {
 
 // Update sets new values on a campaign via mailchimp api
 func (c *Campaign) Update(data *UpdateCampaign) (*Campaign, error) {
-	response, err := c.client.patch(slashJoin(CampaignsURL, c.ID), nil, data)
+	response, err := c.client.Patch(slashJoin(CampaignsURL, c.ID), nil, data)
 
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
@@ -392,7 +392,7 @@ func (c *Campaign) Update(data *UpdateCampaign) (*Campaign, error) {
 
 // Cancel a campaign
 func (c *Campaign) Cancel() error {
-	_, err := c.client.post(slashJoin(CampaignsURL, c.ID, CampaignActionCancel), nil, nil)
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionCancel), nil, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -405,7 +405,7 @@ func (c *Campaign) Cancel() error {
 
 // Pause a campaign
 func (c *Campaign) Pause() error {
-	_, err := c.client.post(slashJoin(CampaignsURL, c.ID, CampaignActionPause), nil, nil)
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionPause), nil, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -418,7 +418,7 @@ func (c *Campaign) Pause() error {
 
 // Resume a campaign
 func (c *Campaign) Resume() error {
-	_, err := c.client.post(slashJoin(CampaignsURL, c.ID, CampaignActionResume), nil, nil)
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionResume), nil, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -431,7 +431,7 @@ func (c *Campaign) Resume() error {
 
 // Schedule a campaign
 func (c *Campaign) Schedule() error {
-	_, err := c.client.post(slashJoin(CampaignsURL, c.ID, CampaignActionSchedule), nil, nil)
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionSchedule), nil, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -444,7 +444,7 @@ func (c *Campaign) Schedule() error {
 
 // Send a campaign
 func (c *Campaign) Send() error {
-	_, err := c.client.post(slashJoin(CampaignsURL, c.ID, CampaignActionSend), nil, nil)
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionSend), nil, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -457,7 +457,7 @@ func (c *Campaign) Send() error {
 
 // Test a campaign
 func (c *Campaign) Test() error {
-	_, err := c.client.post(slashJoin(CampaignsURL, c.ID, CampaignActionTest), nil, nil)
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionTest), nil, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -470,7 +470,7 @@ func (c *Campaign) Test() error {
 
 // Unschedule a campaign
 func (c *Campaign) Unschedule() error {
-	_, err := c.client.post(slashJoin(CampaignsURL, c.ID, CampaignActionUnschedule), nil, nil)
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionUnschedule), nil, nil)
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -483,7 +483,7 @@ func (c *Campaign) Unschedule() error {
 
 // Delete removes a campaign
 func (c *Campaign) Delete() error {
-	err := c.client.delete(slashJoin(CampaignsURL, c.ID))
+	err := c.client.Delete(slashJoin(CampaignsURL, c.ID))
 	if err != nil {
 		log.WithFields(log.Fields{
 			"ID":    c.ID,
@@ -557,7 +557,7 @@ type CampaignContentEdit struct {
 // GetContent retrives the content for a campaign
 func (c *Campaign) GetContent() (interface{}, error) {
 
-	response, err := c.client.get(slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil)
+	response, err := c.client.Get(slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil)
 
 	var content *CampaignContent
 	err = json.Unmarshal(response, &content)
@@ -574,7 +574,7 @@ func (c *Campaign) GetContent() (interface{}, error) {
 
 // SetContent updates the content for the campaign
 func (c *Campaign) SetContent(content *CampaignContentEdit) (*CampaignContent, error) {
-	response, err := c.client.put(slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil, content)
+	response, err := c.client.Put(slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil, content)
 
 	var responseContent *CampaignContent
 	err = json.Unmarshal(response, &responseContent)
