@@ -45,7 +45,7 @@ type WebhookSources struct {
 
 // CreateWebhookRequest defines the structure of a create webhook request to mailchimp.
 type CreateWebhookRequest struct {
-	ListID  string
+	ListID  string         `json:"-"` // json marshal ignore
 	URL     string         `json:"url"`
 	Events  WebhookEvents  `json:"events"`
 	Sources WebhookSources `json:"sources"`
