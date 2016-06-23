@@ -199,8 +199,8 @@ type WebhookEvent struct {
 	mergeFields map[string]string `schema:"-"`
 }
 
-// GetMerge returns the value of the merge field if it exists and was defined in WebhookParseEvent.
-func (e *WebhookEvent) GetMerge(field string) string {
+// GetMergesField returns the value of the merge field if it exists and was defined in WebhookParseEvent.
+func (e *WebhookEvent) GetMergesField(field string) string {
 	return e.mergeFields[field]
 }
 
