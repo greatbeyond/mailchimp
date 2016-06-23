@@ -1,6 +1,11 @@
 package mailchimp
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/gorilla/schema"
+)
 
 // ------------------------------------------------------------------------------
 // Common Webhook definitions
@@ -147,4 +152,67 @@ func (w *GetWebhookResponse) DeleteWebhook() error {
 	}
 
 	return w.client.Delete(slashJoin(ListsURL, w.ListID, WebhooksURL, w.ID))
+}
+
+// ------------------------------------------------------------------------------
+// Mailchimp webhook events structs and parse
+// ------------------------------------------------------------------------------
+
+// WebhookEventTypeSubscribe the type of subscribe event
+const WebhookEventTypeSubscribe string = "subscribe"
+
+// WebhookEventTypeUnsubscribe the type of unsubscribe event
+const WebhookEventTypeUnsubscribe string = "unsubscribe"
+
+// WebhookEventTypeProfileUpdates the type of profile event
+const WebhookEventTypeProfileUpdates string = "profile"
+
+// WebhookEventTypeEmailChanged the type of upemail event
+const WebhookEventTypeEmailChanged string = "upemail"
+
+// WebhookEventTypeEmailCleaned the type of cleaned event
+const WebhookEventTypeEmailCleaned string = "cleaned"
+
+// WebhookEventTypeCampaignStatus the type of campaign event
+const WebhookEventTypeCampaignStatus string = "campaign"
+
+// WebhookEvent is a canonical struct with fields for all supported events. See API reference
+// for which fields is sent by which event: https://apidocs.mailchimp.com/webhooks/.
+type WebhookEvent struct {
+	Type       string `schema:"type"`
+	FiredAt    string `schema:"fired_at"`
+	Action     string `schema:"data[action]"`
+	Reason     string `schema:"data[reason]"`
+	ID         string `schema:"data[id]"`
+	NewID      string `schema:"data[new_id]"`
+	ListID     string `schema:"data[list_id]"`
+	Email      string `schema:"data[email]"`
+	EmailType  string `schema:"data[email_type]"`
+	NewEmail   string `schema:"data[new_email]"`
+	OldEmail   string `schema:"data[old_email]"`
+	IPOpt      string `schema:"data[ip_opt]"`
+	IPSignup   string `schema:"data[ip_signup]"`
+	CampaignID string `schema:"data[campaign_id]"`
+	Subject    string `schema:"data[subject]"`
+	Status     string `schema:"data[status]"`
+}
+
+// WebhookParseEvent will parse the webhook form event and return a WebhookEvent on success,
+// otherwise error.
+func WebhookParseEvent(r *http.Request) (*WebhookEvent, error) {
+	err := r.ParseForm()
+	if err != nil {
+		return nil, err
+	}
+
+	decoder := schema.NewDecoder()
+	decoder.IgnoreUnknownKeys(true)
+
+	event := &WebhookEvent{}
+	err = decoder.Decode(event, r.Form)
+	if err != nil {
+		return nil, err
+	}
+
+	return event, nil
 }
