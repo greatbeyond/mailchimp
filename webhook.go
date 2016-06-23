@@ -195,11 +195,18 @@ type WebhookEvent struct {
 	CampaignID string `schema:"data[campaign_id]"`
 	Subject    string `schema:"data[subject]"`
 	Status     string `schema:"data[status]"`
+
+	mergeFields map[string]string `schema:"-"`
+}
+
+// GetMerge returns the value of the merge field if it exists and was defined in WebhookParseEvent.
+func (e *WebhookEvent) GetMerge(field string) string {
+	return e.mergeFields[field]
 }
 
 // WebhookParseEvent will parse the webhook form event and return a WebhookEvent on success,
 // otherwise error.
-func WebhookParseEvent(r *http.Request) (*WebhookEvent, error) {
+func WebhookParseEvent(r *http.Request, mergesFields ...string) (*WebhookEvent, error) {
 	err := r.ParseForm()
 	if err != nil {
 		return nil, err
@@ -212,6 +219,11 @@ func WebhookParseEvent(r *http.Request) (*WebhookEvent, error) {
 	err = decoder.Decode(event, r.Form)
 	if err != nil {
 		return nil, err
+	}
+
+	// Save defined merges fields
+	for _, v := range mergesFields {
+		event.mergeFields[v] = r.Form.Get(v)
 	}
 
 	return event, nil
