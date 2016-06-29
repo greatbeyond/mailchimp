@@ -6,12 +6,20 @@
 package mailchimp
 
 import (
+	"crypto/md5"
 	"fmt"
 	"regexp"
 	"runtime"
 	"strings"
 	"time"
 )
+
+// MemberEmailToID converts member email address to mailchimp ID (md5 hashed lowercase version of email address)
+func MemberEmailToID(email string) string {
+	lcemail := strings.ToLower(email)
+	hash := md5.Sum([]byte(lcemail))
+	return fmt.Sprintf("%x", hash)
+}
 
 // from go httputils
 func singleJoiningSlash(a, b string) string {
