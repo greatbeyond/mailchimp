@@ -16,12 +16,23 @@ const WebhooksURL = "/webhooks"
 
 // Webhook defines the structure of webhook from mailchimp.
 type Webhook struct {
-	ID      string          `json:"id"`
-	URL     string          `json:"url"`
-	Events  WebhookEvents   `json:"events"`
-	Sources WebhookSources  `json:"sources"`
-	ListID  string          `json:"list_id"`
-	Links   json.RawMessage `json:"_links"` // This field has links to schema types
+	// An string that uniquely identifies this webhook.
+	ID string `json:"id"`
+
+	// A valid URL for the Webhook.
+	URL string `json:"url"`
+
+	// The events that can trigger the webhook and whether they are enabled.
+	Events *WebhookEvents `json:"events"`
+
+	// The possible sources of any events that can trigger the webhook and whether they are enabled.
+	Sources *WebhookSources `json:"sources"`
+
+	// The unique id for the list.
+	ListID string `json:"list_id"`
+
+	// This field has links to schema types
+	Links json.RawMessage `json:"_links"`
 
 	// Internal
 	client *Client
@@ -29,40 +40,51 @@ type Webhook struct {
 
 // WebhookEvents defines all valid fields for webhook events.
 type WebhookEvents struct {
-	Subscribe   bool `json:"subscribe,omitempty"`
+	// Whether the webhook is triggered when a list subscriber is added.
+	Subscribe bool `json:"subscribe,omitempty"`
+
+	// Whether the webhook is triggered when a list member unsubscribes.
 	Unsubscribe bool `json:"unsubscribe,omitempty"`
-	Profile     bool `json:"profile,omitempty"`
-	Cleaned     bool `json:"cleaned,omitempty"`
-	UpEmail     bool `json:"upemail,omitempty"`
-	Campaign    bool `json:"campaign,omitempty"`
+
+	// Whether the webhook is triggered when a subscriber’s profile is updated.
+	Profile bool `json:"profile,omitempty"`
+
+	// Whether the webhook is triggered when a subscriber’s email address is cleaned from
+	Cleaned bool `json:"cleaned,omitempty"`
+
+	// Whether the webhook is triggered when a subscriber’s email address is changed.
+	UpEmail bool `json:"upemail,omitempty"`
+
+	// Whether the webhook is triggered when a campaign is sent or cancelled.
+	Campaign bool `json:"campaign,omitempty"`
 }
 
 // WebhookSources defines all valid fields for webhook sources.
 type WebhookSources struct {
-	User  bool `json:"user,omitempty"`
+	//Whether the webhook is triggered by subscriber-initiated actions.
+	User bool `json:"user,omitempty"`
+	//Whether the webhook is triggered by admin-initiated actions in the web interface.
 	Admin bool `json:"admin,omitempty"`
-	API   bool `json:"api,omitempty"`
+	//Whether the webhook is triggered by actions initiated via the API.
+	API bool `json:"api,omitempty"`
 }
 
 // ------------------------------------------------------------------------------
 // Webhook request, response definitions and implementation
 // ------------------------------------------------------------------------------
 
-// CreateWebhookRequest defines the structure of a create webhook request to mailchimp.
-type CreateWebhookRequest struct {
-	ListID  string         `json:"-"` // json marshal ignore
-	URL     string         `json:"url"`
-	Events  WebhookEvents  `json:"events"`
-	Sources WebhookSources `json:"sources"`
+// CreateWebhook defines the structure of a create webhook request to mailchimp.
+type CreateWebhook struct {
+	ListID  string          `json:"-"` // json marshal ignore
+	URL     string          `json:"url"`
+	Events  *WebhookEvents  `json:"events"`
+	Sources *WebhookSources `json:"sources"`
 }
-
-// CreateWebhookResponse defines the structure of a create webhook response from mailchimp.
-type CreateWebhookResponse Webhook
 
 // CreateWebhook adds a webhook to a list. Mailchimp will send events through this webhook on:
 // subcribes, unsubscribes, profile updates, email address changes and campaign sending status.
 // Returns webhook ID on success, otherwise error.
-func (c *Client) CreateWebhook(request *CreateWebhookRequest) (*CreateWebhookResponse, error) {
+func (c *Client) CreateWebhook(request *CreateWebhook) (*Webhook, error) {
 	_, err := c.GetList(request.ListID)
 	if err != nil {
 		return nil, err
@@ -70,16 +92,67 @@ func (c *Client) CreateWebhook(request *CreateWebhookRequest) (*CreateWebhookRes
 
 	response, err := c.Post(slashJoin(ListsURL, request.ListID, WebhooksURL), nil, request)
 
-	createWebhookResponse := CreateWebhookResponse{}
-	err = json.Unmarshal(response, &createWebhookResponse)
+	var webhook *Webhook
+	err = json.Unmarshal(response, &webhook)
 	if err != nil {
 		return nil, err
 	}
 
 	// Add internal client
-	createWebhookResponse.client = c
+	webhook.client = c
 
-	return &createWebhookResponse, nil
+	return webhook, nil
+}
+
+// getWebhooksResponse defines the structure of a info webhooks response from mailchimp.
+type getWebhooksResponse struct {
+	Webhooks   []*Webhook      `json:"webhooks"`
+	ListID     string          `json:"list_id"`
+	TotalItems int             `json:"total_items"`
+	Links      json.RawMessage `json:"_links"` // This field has links to schema types
+}
+
+// GetWebhooks returns information from all webhooks on a list.
+// Returns webhook info on success, otherwise nil and error.
+func (c *Client) GetWebhooks(listID string) ([]*Webhook, error) {
+	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var webhooksResponse *getWebhooksResponse
+	err = json.Unmarshal(response, &webhooksResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add internal client
+	webhooks := []*Webhook{}
+	for _, webhook := range webhooksResponse.Webhooks {
+		webhook.client = c
+		webhooks = append(webhooks, webhook)
+	}
+
+	return webhooks, nil
+}
+
+// GetWebhook returns information for a single webhook.
+func (c *Client) GetWebhook(listID string, webhookID string) (*Webhook, error) {
+	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL, webhookID), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	var webhook *Webhook
+	err = json.Unmarshal(response, &webhook)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add internal client
+	webhook.client = c
+
+	return webhook, nil
 }
 
 // DeleteWebhook removes a webhook from mailchimp.
@@ -88,93 +161,26 @@ func (w *Webhook) DeleteWebhook() error {
 	if w.client == nil {
 		return ErrorNoClient
 	}
-
-	return w.client.Delete(slashJoin(ListsURL, w.ListID, WebhooksURL, w.ID))
-}
-
-// GetWebhooksResponse defines the structure of a info webhooks response from mailchimp.
-type GetWebhooksResponse struct {
-	Webhooks   []Webhook       `json:"webhooks"`
-	ListID     string          `json:"list_id"`
-	TotalItems int             `json:"total_items"`
-	Links      json.RawMessage `json:"_links"` // This field has links to schema types
-}
-
-// GetWebhooks returns information from all webhooks on a list.
-// Returns webhook info on success, otherwise nil and error.
-func (c *Client) GetWebhooks(listID string) (*GetWebhooksResponse, error) {
-	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	getWebhooksResponse := GetWebhooksResponse{}
-	err = json.Unmarshal(response, &getWebhooksResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add internal client
-	for _, webhook := range getWebhooksResponse.Webhooks {
-		webhook.client = c
-	}
-
-	return &getWebhooksResponse, nil
-}
-
-// GetWebhookResponse defines the structure of a info webhook response from mailchimp.
-type GetWebhookResponse Webhook
-
-// GetWebhook returns information for a single webhook.
-func (c *Client) GetWebhook(listID string, webhookID string) (*GetWebhookResponse, error) {
-	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL, webhookID), nil)
-	if err != nil {
-		return nil, err
-	}
-
-	getWebhookResponse := GetWebhookResponse{}
-	err = json.Unmarshal(response, &getWebhookResponse)
-	if err != nil {
-		return nil, err
-	}
-
-	// Add internal client
-	getWebhookResponse.client = c
-
-	return &getWebhookResponse, nil
-}
-
-// DeleteWebhook removes a webhook from mailchimp.
-// Returns error on failure
-func (w *GetWebhookResponse) DeleteWebhook() error {
-	if w.client == nil {
-		return ErrorNoClient
-	}
-
 	return w.client.Delete(slashJoin(ListsURL, w.ListID, WebhooksURL, w.ID))
 }
 
 // ------------------------------------------------------------------------------
 // Mailchimp webhook events structs and parse
 // ------------------------------------------------------------------------------
-
-// WebhookEventTypeSubscribe the type of subscribe event
-const WebhookEventTypeSubscribe string = "subscribe"
-
-// WebhookEventTypeUnsubscribe the type of unsubscribe event
-const WebhookEventTypeUnsubscribe string = "unsubscribe"
-
-// WebhookEventTypeProfileUpdates the type of profile event
-const WebhookEventTypeProfileUpdates string = "profile"
-
-// WebhookEventTypeEmailChanged the type of upemail event
-const WebhookEventTypeEmailChanged string = "upemail"
-
-// WebhookEventTypeEmailCleaned the type of cleaned event
-const WebhookEventTypeEmailCleaned string = "cleaned"
-
-// WebhookEventTypeCampaignStatus the type of campaign event
-const WebhookEventTypeCampaignStatus string = "campaign"
+const (
+	// WebhookEventTypeSubscribe the type of subscribe event
+	WebhookEventTypeSubscribe string = "subscribe"
+	// WebhookEventTypeUnsubscribe the type of unsubscribe event
+	WebhookEventTypeUnsubscribe string = "unsubscribe"
+	// WebhookEventTypeProfileUpdates the type of profile event
+	WebhookEventTypeProfileUpdates string = "profile"
+	// WebhookEventTypeEmailChanged the type of upemail event
+	WebhookEventTypeEmailChanged string = "upemail"
+	// WebhookEventTypeEmailCleaned the type of cleaned event
+	WebhookEventTypeEmailCleaned string = "cleaned"
+	// WebhookEventTypeCampaignStatus the type of campaign event
+	WebhookEventTypeCampaignStatus string = "campaign"
+)
 
 // WebhookEvent is a canonical struct with fields for all supported events. See API reference
 // for which fields is sent by which event: https://apidocs.mailchimp.com/webhooks/.

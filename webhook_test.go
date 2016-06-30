@@ -5,14 +5,7 @@
 
 package mailchimp
 
-import (
-	"testing"
-
-	check "gopkg.in/check.v1"
-)
-
-// Hook up gocheck into the "go test" runner.
-func Test_Webhook(t *testing.T) { check.TestingT(t) }
+import check "gopkg.in/check.v1"
 
 var _ = check.Suite(&WebhookTestSuite{})
 
@@ -21,7 +14,6 @@ type WebhookTestSuite struct {
 
 func (suite *WebhookTestSuite) NewClient() *Client {
 	client := NewClient("arandomtoken-us0")
-	client.Debug(true)
 	client.NewBatch()
 
 	return client
@@ -37,14 +29,14 @@ func (suite *WebhookTestSuite) TearDownTest(c *check.C) {}
 func (suite *WebhookTestSuite) Test_CreateWebhook(c *check.C) {
 	client := suite.NewClient()
 
-	createWebhookResponse, err := client.CreateWebhook(&CreateWebhookRequest{
+	createWebhookResponse, err := client.CreateWebhook(&CreateWebhook{
 		ListID: "1",
 		URL:    "http://test.url/webhook",
-		Events: WebhookEvents{
+		Events: &WebhookEvents{
 			Subscribe:   true,
 			Unsubscribe: true,
 		},
-		Sources: WebhookSources{
+		Sources: &WebhookSources{
 			User: true,
 		},
 	})
