@@ -8,7 +8,7 @@ package mailchimp
 import (
 	"encoding/json"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/antonholmquist/jason"
 )
 
@@ -111,31 +111,31 @@ func (c *Client) NewMember() *Member {
 func (c *Client) CreateMember(data *CreateMember, listID string) (*Member, error) {
 
 	if err := missingField(listID, "listID"); err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	if err := missingField(data.Status, "status"); err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	response, err := c.Post(slashJoin(ListsURL, listID, MembersURL), nil, data)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var member *Member
 	err = json.Unmarshal(response, &member)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
@@ -149,47 +149,47 @@ func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, err
 	p := requestParameters(params)
 	response, err := c.Get(slashJoin(ListsURL, listID, MembersURL), p)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	v, err := jason.NewObjectFromBytes(response)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	_members, err := v.GetValue("members")
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	b, err := _members.Marshal()
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var members []*Member
 	err = json.Unmarshal(b, &members)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
@@ -204,22 +204,22 @@ func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, err
 func (c *Client) GetMember(id string, listID string) (*Member, error) {
 	response, err := c.Get(slashJoin(ListsURL, listID, MembersURL, id), nil)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID":   listID,
 			"memberID": id,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var member *Member
 	err = json.Unmarshal(response, &member)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID":   listID,
 			"memberID": id,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
@@ -235,18 +235,18 @@ func (m *Member) Delete() error {
 	}
 	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MembersURL, m.ID))
 	if err != nil {
-		log.WithFields(log.Fields{
+		m.client.Log().WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"memberID": m.ID,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return err
 	}
 
 	return nil
 }
 
-// Returns a new Member object with the updated values
+// Update Returns a new Member object with the updated values
 func (m *Member) Update(data *UpdateMember) (*Member, error) {
 
 	if m.client == nil {
@@ -257,22 +257,22 @@ func (m *Member) Update(data *UpdateMember) (*Member, error) {
 	// otherwhise the API will tell us it's gone.
 	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, MembersURL, m.ID), nil, data)
 	if err != nil {
-		log.WithFields(log.Fields{
+		m.client.Log().WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"memberID": m.ID,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var member *Member
 	err = json.Unmarshal(response, &member)
 	if err != nil {
-		log.WithFields(log.Fields{
+		m.client.Log().WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"memberID": m.ID,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 

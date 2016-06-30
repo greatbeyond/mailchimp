@@ -5,12 +5,20 @@
 
 package testing
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/Sirupsen/logrus"
+)
 
 type MockClient struct{}
 
 func (m *MockClient) Debug(set ...bool) bool {
-	return true
+	return false
+}
+
+func (m *MockClient) Log() *logrus.Logger {
+	return logrus.New()
 }
 
 func (m *MockClient) Get(resource string, parameters map[string]interface{}) ([]byte, error) {

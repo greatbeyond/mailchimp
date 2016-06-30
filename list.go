@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/antonholmquist/jason"
 )
 
@@ -132,14 +131,14 @@ type ListStats struct {
 func (c *Client) NewList(data *CreateList) (*List, error) {
 	response, err := c.Post(ListsURL, nil, data)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	var list *List
 	err = json.Unmarshal(response, &list)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
@@ -151,32 +150,32 @@ func (c *Client) NewList(data *CreateList) (*List, error) {
 func (c *Client) GetLists() ([]*List, error) {
 	response, err := c.Get(ListsURL, nil)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	v, err := jason.NewObjectFromBytes(response)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	_lists, err := v.GetValue("lists")
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	b, err := _lists.Marshal()
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	var lists []*List
 	err = json.Unmarshal(b, &lists)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
@@ -191,7 +190,7 @@ func (c *Client) GetLists() ([]*List, error) {
 func (c *Client) GetList(id string) (*List, error) {
 	response, err := c.Get(slashJoin(ListsURL, id), nil)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
@@ -220,14 +219,14 @@ func (l *List) Update(data *UpdateList) (*List, error) {
 
 	response, err := l.client.Patch(slashJoin(ListsURL, l.ID), nil, data)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		l.client.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	var list *List
 	err = json.Unmarshal(response, &list)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		l.client.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 

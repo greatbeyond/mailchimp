@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 	"github.com/antonholmquist/jason"
 )
 
@@ -102,12 +102,12 @@ func (c *Client) NewMergeField() *MergeField {
 func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*MergeField, error) {
 
 	if err := missingField(listID, "listID"); err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	if err := missingField(data.Name, "Name"); err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 	if utf8.RuneCountInString(data.Tag) > 10 {
@@ -115,26 +115,26 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 	}
 
 	if err := missingField(data.Type, "Type"); err != nil {
-		log.Debug(err.Error, caller())
+		c.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	response, err := c.Post(slashJoin(ListsURL, listID, MergeFieldsURL), nil, data)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var field *MergeField
 	err = json.Unmarshal(response, &field)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
@@ -149,47 +149,47 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 	p := requestParameters(params)
 	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL), p)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	v, err := jason.NewObjectFromBytes(response)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	_fields, err := v.GetValue("fields")
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	b, err := _fields.Marshal()
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var fields []*MergeField
 	err = json.Unmarshal(b, &fields)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
@@ -205,22 +205,22 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 func (c *Client) GetMergeField(id int, listID string) (*MergeField, error) {
 	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL, strconv.Itoa(id)), nil)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID":   listID,
 			"merge_id": id,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var field *MergeField
 	err = json.Unmarshal(response, &field)
 	if err != nil {
-		log.WithFields(log.Fields{
+		c.Log().WithFields(logrus.Fields{
 			"listID":   listID,
 			"merge_id": id,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
@@ -237,11 +237,11 @@ func (m *MergeField) Delete() error {
 	}
 	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)))
 	if err != nil {
-		log.WithFields(log.Fields{
+		m.client.Log().WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"merge_id": m.MergeID,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return err
 	}
 
@@ -259,22 +259,22 @@ func (m *MergeField) Update(data *UpdateMergeField) (*MergeField, error) {
 	// otherwhise the API will tell us it's gone.
 	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)), nil, data)
 	if err != nil {
-		log.WithFields(log.Fields{
+		m.client.Log().WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"merge_id": m.MergeID,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var field *MergeField
 	err = json.Unmarshal(response, &field)
 	if err != nil {
-		log.WithFields(log.Fields{
+		m.client.Log().WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"merge_id": m.MergeID,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 

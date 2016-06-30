@@ -5,10 +5,15 @@
 
 package mailchimp
 
-import "net/http"
+import (
+	"net/http"
+
+	"github.com/Sirupsen/logrus"
+)
 
 type MailchimpClient interface {
 	Debug(set ...bool) bool
+	Log() *logrus.Logger
 
 	Get(resource string, parameters map[string]interface{}) ([]byte, error)
 	Post(resource string, parameters map[string]interface{}, data interface{}) ([]byte, error)

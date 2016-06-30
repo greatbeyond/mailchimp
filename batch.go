@@ -6,14 +6,13 @@
 package mailchimp
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	"github.com/Sirupsen/logrus"
 )
 
 const (
@@ -97,6 +96,19 @@ type BatchOperation struct {
 	OperationID string `json:"operation_id,omitempty"`
 }
 
+// NewBatch creates a new batch queue in the client
+func (c *Client) NewBatch() {
+	c.Batch = NewBatchQueue(c)
+}
+
+// RunBatch executes a batch and resets the batch queue
+// In addition to running the batch, the batch queue is reset.
+func (c *Client) RunBatch() (*Batch, error) {
+	b := c.Batch
+	c.Batch = nil
+	return b.Run()
+}
+
 func NewBatchQueue(client MailchimpClient) *BatchQueue {
 	return &BatchQueue{
 		client:     client,
@@ -107,18 +119,16 @@ func NewBatchQueue(client MailchimpClient) *BatchQueue {
 // Do adds the operation to the queue
 func (b *BatchQueue) Do(request *http.Request) ([]byte, error) {
 
-	if b.client.Debug() {
-		fmt.Printf("-- BATCH OP %d ------------------\n", len(b.Operations))
-		fmt.Printf("%s: %s\n", request.Method, request.URL)
-		if request.Body != nil {
-			buf := new(bytes.Buffer)
-			buf.ReadFrom(request.Body)
-			s := buf.String()
-			request.Body = ioutil.NopCloser(bytes.NewBuffer([]byte(s)))
-			fmt.Println(s)
-		}
-		fmt.Println("----------------------------")
+	if request == nil {
+		return nil, fmt.Errorf("can't send nil request")
 	}
+
+	_requestCount++
+	b.client.Log().WithFields(logrus.Fields{
+		"request_count": _requestCount,
+		"method":        request.Method,
+		"url":           request.URL,
+	}).Debug("batched", request.Method, "request")
 
 	var body string
 	if request.Body != nil {
@@ -162,14 +172,14 @@ func (b *BatchQueue) Run() (*Batch, error) {
 
 	response, err := b.client.Post(batchURL, nil, b)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		b.client.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 
 	var br *Batch
 	err = json.Unmarshal(response, &br)
 	if err != nil {
-		log.Debug(err.Error, caller())
+		b.client.Log().Debug(err.Error, caller())
 		return nil, err
 	}
 	return br, nil
@@ -179,20 +189,20 @@ func (b *BatchQueue) Run() (*Batch, error) {
 func (b *BatchQueue) Get(id string) (*BatchOperation, error) {
 	response, err := b.client.Get(slashJoin(batchURL, id), nil)
 	if err != nil {
-		log.WithFields(log.Fields{
+		b.client.Log().WithFields(logrus.Fields{
 			"batch_id": id,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 
 	var batch *BatchOperation
 	err = json.Unmarshal(response, &batch)
 	if err != nil {
-		log.WithFields(log.Fields{
+		b.client.Log().WithFields(logrus.Fields{
 			"batch_id": id,
 			"error":    err.Error(),
-		}).Warn("response error", caller())
+		}).Debug("response error", caller())
 		return nil, err
 	}
 

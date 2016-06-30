@@ -8,15 +8,11 @@ package mailchimp
 import (
 	"bytes"
 	"net/http"
-	"testing"
 
 	t "github.com/greatbeyond/mailchimp.v3/testing"
 
 	check "gopkg.in/check.v1"
 )
-
-// Hook up gocheck into the "go test" runner.
-func Test(t *testing.T) { check.TestingT(t) }
 
 var _ = check.Suite(&BatchTestSuite{})
 
@@ -92,7 +88,6 @@ func (suite *BatchTestSuite) Test_Batch_Do_POST(c *check.C) {
 func (suite *BatchTestSuite) Test_Batch_CreateMember(c *check.C) {
 
 	client := NewClient("arandomtoken-us0")
-	client.Debug(true)
 	client.NewBatch()
 
 	_, err := client.CreateMember(&CreateMember{
@@ -112,7 +107,6 @@ func (suite *BatchTestSuite) Test_Batch_CreateMember(c *check.C) {
 func (suite *BatchTestSuite) Test_Batch_CreateMergeField(c *check.C) {
 
 	client := NewClient("arandomtoken-us0")
-	client.Debug(true)
 	client.NewBatch()
 
 	_, err := client.CreateMergeField(&CreateMergeField{
