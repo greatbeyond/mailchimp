@@ -34,6 +34,9 @@ func (s *MailchimpTestSuite) SetUpTest(c *check.C) {
 
 	s.Client = NewClient("b12824bd84759ef84abc67fd789e7570-us13")
 	s.Client.HTTPClient = s.server.HTTPClient
+
+	// We need http to use the mock server
+	s.Client.APIURL = strings.Replace(s.Client.APIURL, "https://", "http://", 1)
 }
 
 func (s *MailchimpTestSuite) TearDownTest(c *check.C) {}
@@ -43,7 +46,7 @@ func (s *MailchimpTestSuite) TearDownTest(c *check.C) {}
 
 func (s *MailchimpTestSuite) Test_NewClient_Normal(c *check.C) {
 	c.Assert(s.Client.token, check.Equals, "b12824bd84759ef84abc67fd789e7570-us13")
-	c.Assert(s.Client.APIURL, check.Equals, "https://us13.api.mailchimp.com/3.0/")
+	c.Assert(s.Client.APIURL, check.Equals, "http://us13.api.mailchimp.com/3.0/")
 }
 
 func (s *MailchimpTestSuite) Test_NewClient_MalformedToken(c *check.C) {
@@ -54,7 +57,7 @@ func (s *MailchimpTestSuite) Test_NewClient_MalformedToken(c *check.C) {
 func (s *MailchimpTestSuite) Test_Clone_Normal(c *check.C) {
 	clone := s.Client.Clone()
 	c.Assert(clone.token, check.Equals, "b12824bd84759ef84abc67fd789e7570-us13")
-	c.Assert(clone.APIURL, check.Equals, "https://us13.api.mailchimp.com/3.0/")
+	c.Assert(clone.APIURL, check.Equals, "http://us13.api.mailchimp.com/3.0/")
 	c.Assert(clone.debug, check.Equals, s.Client.debug)
 }
 
@@ -68,7 +71,6 @@ func (s *MailchimpTestSuite) Test_Debug_Normal(c *check.C) {
 // GET Requests
 
 func (s *MailchimpTestSuite) Test_Get_Normal(c *check.C) {
-	s.Client.APIURL = strings.Replace(s.Client.APIURL, "https://", "http://", 1)
 	s.server.AddResponse(&t.MockResponse{
 		Method: "GET",
 		Code:   200,
@@ -97,7 +99,6 @@ func (s *MailchimpTestSuite) Test_Get_Malformed(c *check.C) {
 // POST Requests
 
 func (s *MailchimpTestSuite) Test_Post_Normal(c *check.C) {
-	s.Client.APIURL = strings.Replace(s.Client.APIURL, "https://", "http://", 1)
 	s.server.AddResponse(&t.MockResponse{
 		Method: "POST",
 		Code:   200,
@@ -135,7 +136,6 @@ func (s *MailchimpTestSuite) Test_Post_MalformedURL(c *check.C) {
 // PATCH Requests
 
 func (s *MailchimpTestSuite) Test_Patch_Normal(c *check.C) {
-	s.Client.APIURL = strings.Replace(s.Client.APIURL, "https://", "http://", 1)
 	s.server.AddResponse(&t.MockResponse{
 		Method: "PATCH",
 		Code:   200,
@@ -173,7 +173,6 @@ func (s *MailchimpTestSuite) Test_Patch_MalformedURL(c *check.C) {
 // PUT Requests
 
 func (s *MailchimpTestSuite) Test_Put_Normal(c *check.C) {
-	s.Client.APIURL = strings.Replace(s.Client.APIURL, "https://", "http://", 1)
 	s.server.AddResponse(&t.MockResponse{
 		Method: "PUT",
 		Code:   200,
@@ -211,7 +210,6 @@ func (s *MailchimpTestSuite) Test_Put_MalformedURL(c *check.C) {
 // DELETE Requests
 
 func (s *MailchimpTestSuite) Test_Delete_Normal(c *check.C) {
-	s.Client.APIURL = strings.Replace(s.Client.APIURL, "https://", "http://", 1)
 	s.server.AddResponse(&t.MockResponse{
 		Method: "DELETE",
 		Code:   http.StatusNoContent,
