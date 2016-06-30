@@ -172,14 +172,14 @@ func (b *BatchQueue) Run() (*Batch, error) {
 
 	response, err := b.client.Post(batchURL, nil, b)
 	if err != nil {
-		b.client.Log().Debug(err.Error, caller())
+		b.client.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 
 	var br *Batch
 	err = json.Unmarshal(response, &br)
 	if err != nil {
-		b.client.Log().Debug(err.Error, caller())
+		b.client.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 	return br, nil

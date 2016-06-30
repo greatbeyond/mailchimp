@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/antonholmquist/jason"
 )
 
 const (
@@ -305,11 +304,15 @@ func (c *Client) NewCampaign(data *CreateCampaign) (*Campaign, error) {
 // -----------------------------------------------------------------
 // Retrive and update
 
+type getCampaigns struct {
+	Campaigns  []*Campaign `json:"campaigns"`
+	ListID     string      `json:"list_id"`
+	TotalItems int         `json:"total_items"`
+}
+
 // GetCampaigns retrives all campaigns from mailchimp
 func (c *Client) GetCampaigns() ([]*Campaign, error) {
 	response, err := c.Get(CampaignsURL, nil)
-
-	v, err := jason.NewObjectFromBytes(response)
 	if err != nil {
 		c.log.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -317,33 +320,17 @@ func (c *Client) GetCampaigns() ([]*Campaign, error) {
 		return nil, err
 	}
 
-	_campaigns, err := v.GetValue("campaigns")
+	var campaignsResponse *getCampaigns
+	err = json.Unmarshal(response, &campaignsResponse)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Debug("response error", caller())
 		return nil, err
 	}
 
-	b, err := _campaigns.Marshal()
-	if err != nil {
-		c.log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
-	}
-
-	var campaigns []*Campaign
-	err = json.Unmarshal(b, &campaigns)
-	if err != nil {
-		c.log.WithFields(logrus.Fields{
-			"error": err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
-	}
-
-	for _, l := range campaigns {
-		l.client = c
+	// Add internal client
+	campaigns := []*Campaign{}
+	for _, campaign := range campaignsResponse.Campaigns {
+		campaign.client = c
+		campaigns = append(campaigns, campaign)
 	}
 
 	return campaigns, nil

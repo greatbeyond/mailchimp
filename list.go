@@ -9,8 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/antonholmquist/jason"
 )
 
 // Denotes list visibility for creation
@@ -131,14 +129,14 @@ type ListStats struct {
 func (c *Client) NewList(data *CreateList) (*List, error) {
 	response, err := c.Post(ListsURL, nil, data)
 	if err != nil {
-		c.Log().Debug(err.Error, caller())
+		c.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 
 	var list *List
 	err = json.Unmarshal(response, &list)
 	if err != nil {
-		c.Log().Debug(err.Error, caller())
+		c.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 
@@ -147,40 +145,30 @@ func (c *Client) NewList(data *CreateList) (*List, error) {
 	return list, nil
 }
 
+type getListsResponse struct {
+	Lists      []*List `json:"lists"`
+	TotalItems int     `json:"total_items"`
+}
+
 func (c *Client) GetLists() ([]*List, error) {
 	response, err := c.Get(ListsURL, nil)
 	if err != nil {
-		c.Log().Debug(err.Error, caller())
+		c.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 
-	v, err := jason.NewObjectFromBytes(response)
+	var listsResponse getListsResponse
+	err = json.Unmarshal(response, &listsResponse)
 	if err != nil {
-		c.Log().Debug(err.Error, caller())
+		c.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 
-	_lists, err := v.GetValue("lists")
-	if err != nil {
-		c.Log().Debug(err.Error, caller())
-		return nil, err
-	}
-
-	b, err := _lists.Marshal()
-	if err != nil {
-		c.Log().Debug(err.Error, caller())
-		return nil, err
-	}
-
-	var lists []*List
-	err = json.Unmarshal(b, &lists)
-	if err != nil {
-		c.Log().Debug(err.Error, caller())
-		return nil, err
-	}
-
-	for _, l := range lists {
-		l.client = c
+	// Add internal client
+	lists := []*List{}
+	for _, list := range listsResponse.Lists {
+		list.client = c
+		lists = append(lists, list)
 	}
 
 	return lists, nil
@@ -190,14 +178,13 @@ func (c *Client) GetLists() ([]*List, error) {
 func (c *Client) GetList(id string) (*List, error) {
 	response, err := c.Get(slashJoin(ListsURL, id), nil)
 	if err != nil {
-		c.Log().Debug(err.Error, caller())
+		c.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 
 	var list *List
 	err = json.Unmarshal(response, &list)
 	if err != nil {
-
 		return nil, err
 	}
 
@@ -219,14 +206,14 @@ func (l *List) Update(data *UpdateList) (*List, error) {
 
 	response, err := l.client.Patch(slashJoin(ListsURL, l.ID), nil, data)
 	if err != nil {
-		l.client.Log().Debug(err.Error, caller())
+		l.client.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 
 	var list *List
 	err = json.Unmarshal(response, &list)
 	if err != nil {
-		l.client.Log().Debug(err.Error, caller())
+		l.client.Log().Debug(err.Error(), caller())
 		return nil, err
 	}
 

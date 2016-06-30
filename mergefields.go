@@ -12,7 +12,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/antonholmquist/jason"
 )
 
 const MergeFieldsURL = "/merge-fields"
@@ -143,6 +142,12 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 	return field, nil
 }
 
+type getMergeField struct {
+	MergeField []*MergeField `json:"merge_fields"`
+	ListID     string        `json:"list_id"`
+	TotalItems int           `json:"total_items"`
+}
+
 // GetMergeFields fetches all merge fields
 func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeField, error) {
 
@@ -156,48 +161,20 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 		return nil, err
 	}
 
-	v, err := jason.NewObjectFromBytes(response)
+	var mergefieldsResponse *getMergeField
+	err = json.Unmarshal(response, &mergefieldsResponse)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
 		return nil, err
 	}
 
-	_fields, err := v.GetValue("fields")
-	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
+	// Add internal client
+	mergefields := []*MergeField{}
+	for _, mergefield := range mergefieldsResponse.MergeField {
+		mergefield.client = c
+		mergefields = append(mergefields, mergefield)
 	}
 
-	b, err := _fields.Marshal()
-	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
-	}
-
-	var fields []*MergeField
-	err = json.Unmarshal(b, &fields)
-	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
-	}
-
-	for _, l := range fields {
-		l.client = c
-	}
-
-	return fields, nil
+	return mergefields, nil
 
 }
 

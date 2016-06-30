@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/antonholmquist/jason"
 )
 
 const MembersURL = "/members"
@@ -144,6 +143,12 @@ func (c *Client) CreateMember(data *CreateMember, listID string) (*Member, error
 	return member, nil
 }
 
+type getMembers struct {
+	Members    []*Member `json:"members"`
+	ListID     string    `json:"list_id"`
+	TotalItems int       `json:"total_items"`
+}
+
 func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, error) {
 
 	p := requestParameters(params)
@@ -156,45 +161,17 @@ func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, err
 		return nil, err
 	}
 
-	v, err := jason.NewObjectFromBytes(response)
+	var membersResponse *getMembers
+	err = json.Unmarshal(response, &membersResponse)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
 		return nil, err
 	}
 
-	_members, err := v.GetValue("members")
-	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
-	}
-
-	b, err := _members.Marshal()
-	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
-	}
-
-	var members []*Member
-	err = json.Unmarshal(b, &members)
-	if err != nil {
-		c.Log().WithFields(logrus.Fields{
-			"listID": listID,
-			"error":  err.Error(),
-		}).Debug("response error", caller())
-		return nil, err
-	}
-
-	for _, l := range members {
-		l.client = c
+	// Add internal client
+	members := []*Member{}
+	for _, member := range membersResponse.Members {
+		member.client = c
+		members = append(members, member)
 	}
 
 	return members, nil
