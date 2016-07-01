@@ -110,7 +110,7 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		return nil, err
 	}
 
-	if err := missingField(data.Type, "Type"); err != nil {
+	if err := missingField(string(data.Type), "Type"); err != nil {
 		Log.Info(err.Error(), caller())
 		return nil, err
 	}
