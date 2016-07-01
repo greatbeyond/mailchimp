@@ -207,6 +207,10 @@ type WebhookEvent struct {
 
 // GetMergesField returns the value of the merge field if it exists and was defined in WebhookParseEvent.
 func (e *WebhookEvent) GetMergesField(field string) string {
+	if e.mergeFields == nil {
+		return ""
+	}
+
 	return e.mergeFields[field]
 }
 
@@ -228,6 +232,10 @@ func WebhookParseEvent(r *http.Request, mergesFields ...string) (*WebhookEvent, 
 	}
 
 	// Save defined merges fields
+	if event.mergeFields == nil {
+		event.mergeFields = map[string]string{}
+	}
+
 	for _, v := range mergesFields {
 		event.mergeFields[v] = r.Form.Get(v)
 	}
