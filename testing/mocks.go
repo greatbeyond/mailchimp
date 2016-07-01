@@ -17,7 +17,7 @@ func (m *MockClient) Debug(set ...bool) bool {
 	return false
 }
 
-func (m *MockClient) Log() *logrus.Logger {
+func (m *MockClient) Log(level ...logrus.Level) *logrus.Logger {
 	return logrus.New()
 }
 

@@ -9,6 +9,7 @@ import (
 	"bytes"
 	"net/http"
 
+	"github.com/Sirupsen/logrus"
 	t "github.com/greatbeyond/mailchimp.v3/testing"
 
 	check "gopkg.in/check.v1"
@@ -20,7 +21,9 @@ type BatchTestSuite struct {
 	Batch *BatchQueue
 }
 
-func (suite *BatchTestSuite) SetUpSuite(c *check.C) {}
+func (suite *BatchTestSuite) SetUpSuite(c *check.C) {
+	Log.Level = logrus.DebugLevel
+}
 
 func (suite *BatchTestSuite) SetUpTest(c *check.C) {
 	suite.Batch = &BatchQueue{

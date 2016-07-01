@@ -124,11 +124,11 @@ func (b *BatchQueue) Do(request *http.Request) ([]byte, error) {
 	}
 
 	_requestCount++
-	b.client.Log().WithFields(logrus.Fields{
-		"request_count": _requestCount,
-		"method":        request.Method,
-		"url":           request.URL,
-	}).Debug("batched", request.Method, "request")
+	Log.WithFields(logrus.Fields{
+		"count":  _requestCount,
+		"method": request.Method,
+		"url":    request.URL,
+	}).Debug("batched ", request.Method, " request")
 
 	var body string
 	if request.Body != nil {
@@ -172,14 +172,14 @@ func (b *BatchQueue) Run() (*Batch, error) {
 
 	response, err := b.client.Post(batchURL, nil, b)
 	if err != nil {
-		b.client.Log().Debug(err.Error(), caller())
+		Log.Debug(err.Error(), caller())
 		return nil, err
 	}
 
 	var br *Batch
 	err = json.Unmarshal(response, &br)
 	if err != nil {
-		b.client.Log().Debug(err.Error(), caller())
+		Log.Debug(err.Error(), caller())
 		return nil, err
 	}
 	return br, nil
@@ -189,20 +189,20 @@ func (b *BatchQueue) Run() (*Batch, error) {
 func (b *BatchQueue) Get(id string) (*BatchOperation, error) {
 	response, err := b.client.Get(slashJoin(batchURL, id), nil)
 	if err != nil {
-		b.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"batch_id": id,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var batch *BatchOperation
 	err = json.Unmarshal(response, &batch)
 	if err != nil {
-		b.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"batch_id": id,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 

@@ -117,12 +117,14 @@ type getWebhooksResponse struct {
 func (c *Client) GetWebhooks(listID string) ([]*Webhook, error) {
 	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL), nil)
 	if err != nil {
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
 	var webhooksResponse *getWebhooksResponse
 	err = json.Unmarshal(response, &webhooksResponse)
 	if err != nil {
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
@@ -140,12 +142,14 @@ func (c *Client) GetWebhooks(listID string) ([]*Webhook, error) {
 func (c *Client) GetWebhook(listID string, webhookID string) (*Webhook, error) {
 	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL, webhookID), nil)
 	if err != nil {
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
 	var webhook *Webhook
 	err = json.Unmarshal(response, &webhook)
 	if err != nil {
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 

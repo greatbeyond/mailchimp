@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Sirupsen/logrus"
 	t "github.com/greatbeyond/mailchimp.v3/testing"
 	check "gopkg.in/check.v1"
 )
@@ -25,7 +26,7 @@ type MailchimpTestSuite struct {
 }
 
 func (s *MailchimpTestSuite) SetUpSuite(c *check.C) {
-
+	Log.Level = logrus.DebugLevel
 }
 
 func (s *MailchimpTestSuite) SetUpTest(c *check.C) {
@@ -59,12 +60,6 @@ func (s *MailchimpTestSuite) Test_Clone_Normal(c *check.C) {
 	c.Assert(clone.token, check.Equals, "b12824bd84759ef84abc67fd789e7570-us13")
 	c.Assert(clone.APIURL, check.Equals, "http://us13.api.mailchimp.com/3.0/")
 	c.Assert(clone.debug, check.Equals, s.Client.debug)
-}
-
-func (s *MailchimpTestSuite) Test_Debug_Normal(c *check.C) {
-	c.Assert(s.Client.Debug(), check.Equals, s.Client.debug)
-	s.Client.Debug(true)
-	c.Assert(s.Client.Debug(), check.Equals, true)
 }
 
 // -------------------------------------------------------------------

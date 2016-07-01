@@ -290,9 +290,9 @@ func (c *Client) NewCampaign(data *CreateCampaign) (*Campaign, error) {
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -314,9 +314,9 @@ type getCampaigns struct {
 func (c *Client) GetCampaigns() ([]*Campaign, error) {
 	response, err := c.Get(CampaignsURL, nil)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -343,10 +343,10 @@ func (c *Client) GetCampaign(id string) (*Campaign, error) {
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    id,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -362,10 +362,10 @@ func (c *Campaign) Update(data *UpdateCampaign) (*Campaign, error) {
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -381,10 +381,10 @@ func (c *Campaign) Update(data *UpdateCampaign) (*Campaign, error) {
 func (c *Campaign) Cancel() error {
 	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionCancel), nil, nil)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -394,10 +394,10 @@ func (c *Campaign) Cancel() error {
 func (c *Campaign) Pause() error {
 	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionPause), nil, nil)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -407,10 +407,10 @@ func (c *Campaign) Pause() error {
 func (c *Campaign) Resume() error {
 	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionResume), nil, nil)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -420,10 +420,10 @@ func (c *Campaign) Resume() error {
 func (c *Campaign) Schedule() error {
 	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionSchedule), nil, nil)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -433,10 +433,10 @@ func (c *Campaign) Schedule() error {
 func (c *Campaign) Send() error {
 	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionSend), nil, nil)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -446,10 +446,10 @@ func (c *Campaign) Send() error {
 func (c *Campaign) Test() error {
 	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionTest), nil, nil)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -459,10 +459,10 @@ func (c *Campaign) Test() error {
 func (c *Campaign) Unschedule() error {
 	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionUnschedule), nil, nil)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -472,10 +472,10 @@ func (c *Campaign) Unschedule() error {
 func (c *Campaign) Delete() error {
 	err := c.client.Delete(slashJoin(CampaignsURL, c.ID))
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 	return nil
@@ -549,10 +549,10 @@ func (c *Campaign) GetContent() (interface{}, error) {
 	var content *CampaignContent
 	err = json.Unmarshal(response, &content)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -566,10 +566,10 @@ func (c *Campaign) SetContent(content *CampaignContentEdit) (*CampaignContent, e
 	var responseContent *CampaignContent
 	err = json.Unmarshal(response, &responseContent)
 	if err != nil {
-		c.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
 			"error": err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 

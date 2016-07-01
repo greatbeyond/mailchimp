@@ -129,14 +129,14 @@ type ListStats struct {
 func (c *Client) NewList(data *CreateList) (*List, error) {
 	response, err := c.Post(ListsURL, nil, data)
 	if err != nil {
-		c.Log().Debug(err.Error(), caller())
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
 	var list *List
 	err = json.Unmarshal(response, &list)
 	if err != nil {
-		c.Log().Debug(err.Error(), caller())
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
@@ -153,14 +153,14 @@ type getListsResponse struct {
 func (c *Client) GetLists() ([]*List, error) {
 	response, err := c.Get(ListsURL, nil)
 	if err != nil {
-		c.Log().Debug(err.Error(), caller())
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
 	var listsResponse getListsResponse
 	err = json.Unmarshal(response, &listsResponse)
 	if err != nil {
-		c.Log().Debug(err.Error(), caller())
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
@@ -178,7 +178,7 @@ func (c *Client) GetLists() ([]*List, error) {
 func (c *Client) GetList(id string) (*List, error) {
 	response, err := c.Get(slashJoin(ListsURL, id), nil)
 	if err != nil {
-		c.Log().Debug(err.Error(), caller())
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
@@ -206,14 +206,14 @@ func (l *List) Update(data *UpdateList) (*List, error) {
 
 	response, err := l.client.Patch(slashJoin(ListsURL, l.ID), nil, data)
 	if err != nil {
-		l.client.Log().Debug(err.Error(), caller())
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
 	var list *List
 	err = json.Unmarshal(response, &list)
 	if err != nil {
-		l.client.Log().Debug(err.Error(), caller())
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 

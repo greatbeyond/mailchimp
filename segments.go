@@ -74,31 +74,31 @@ func (c *Client) NewSegment() *Segment {
 func (c *Client) CreateSegment(data *CreateSegment, listID string) (*Segment, error) {
 
 	if err := missingField(listID, "listID"); err != nil {
-		c.Log().Debug(err.Error, caller())
+		Log.Info(err.Error(), caller())
 		return nil, err
 	}
 
 	if err := missingField(data.Name, "name"); err != nil {
-		c.Log().Debug(err.Error, caller())
+		Log.Info(err.Error(), caller())
 		return nil, err
 	}
 
 	response, err := c.Post(slashJoin(ListsURL, listID, SegmentsURL), nil, data)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id": listID,
 			"error":   err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var segment *Segment
 	err = json.Unmarshal(response, &segment)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id": listID,
 			"error":   err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -118,10 +118,10 @@ func (c *Client) GetSegments(listID string, params ...Parameters) ([]*Segment, e
 	p := requestParameters(params)
 	response, err := c.Get(slashJoin(ListsURL, listID, SegmentsURL), p)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id": listID,
 			"error":   err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -145,22 +145,22 @@ func (c *Client) GetSegments(listID string, params ...Parameters) ([]*Segment, e
 func (c *Client) GetSegment(id string, listID string) (*Segment, error) {
 	response, err := c.Get(slashJoin(ListsURL, listID, SegmentsURL, id), nil)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id":    listID,
 			"segment_id": id,
 			"error":      err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var segment *Segment
 	err = json.Unmarshal(response, &segment)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id":    listID,
 			"segment_id": id,
 			"error":      err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -176,11 +176,11 @@ func (m *Segment) Delete() error {
 	}
 	err := m.client.Delete(slashJoin(ListsURL, m.ListID, SegmentsURL, strconv.Itoa(m.ID)))
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id":    m.ListID,
 			"segment_id": m.ID,
 			"error":      err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 
@@ -198,22 +198,22 @@ func (m *Segment) Update(data *UpdateSegment) (*Segment, error) {
 	// otherwhise the API will tell us it's gone.
 	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, SegmentsURL, strconv.Itoa(m.ID)), nil, data)
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id":    m.ListID,
 			"segment_id": m.ID,
 			"error":      err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var segment *Segment
 	err = json.Unmarshal(response, &segment)
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"list_id":    m.ListID,
 			"segment_id": m.ID,
 			"error":      err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 

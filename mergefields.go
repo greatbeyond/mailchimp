@@ -101,39 +101,40 @@ func (c *Client) NewMergeField() *MergeField {
 func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*MergeField, error) {
 
 	if err := missingField(listID, "listID"); err != nil {
-		c.Log().Debug(err.Error, caller())
+		Log.Info(err.Error(), caller())
 		return nil, err
 	}
 
 	if err := missingField(data.Name, "Name"); err != nil {
-		c.Log().Debug(err.Error, caller())
+		Log.Info(err.Error(), caller())
 		return nil, err
-	}
-	if utf8.RuneCountInString(data.Tag) > 10 {
-		return nil, fmt.Errorf("Name length over limit (10)")
 	}
 
 	if err := missingField(data.Type, "Type"); err != nil {
-		c.Log().Debug(err.Error, caller())
+		Log.Info(err.Error(), caller())
 		return nil, err
+	}
+
+	if utf8.RuneCountInString(data.Tag) > 10 {
+		return nil, fmt.Errorf("tag length over limit (10)")
 	}
 
 	response, err := c.Post(slashJoin(ListsURL, listID, MergeFieldsURL), nil, data)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var field *MergeField
 	err = json.Unmarshal(response, &field)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -154,10 +155,10 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 	p := requestParameters(params)
 	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL), p)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -182,22 +183,22 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 func (c *Client) GetMergeField(id int, listID string) (*MergeField, error) {
 	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL, strconv.Itoa(id)), nil)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   listID,
 			"merge_id": id,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var field *MergeField
 	err = json.Unmarshal(response, &field)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   listID,
 			"merge_id": id,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -214,11 +215,11 @@ func (m *MergeField) Delete() error {
 	}
 	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)))
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"merge_id": m.MergeID,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 
@@ -236,22 +237,22 @@ func (m *MergeField) Update(data *UpdateMergeField) (*MergeField, error) {
 	// otherwhise the API will tell us it's gone.
 	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)), nil, data)
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"merge_id": m.MergeID,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var field *MergeField
 	err = json.Unmarshal(response, &field)
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"merge_id": m.MergeID,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 

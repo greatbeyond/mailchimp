@@ -110,31 +110,31 @@ func (c *Client) NewMember() *Member {
 func (c *Client) CreateMember(data *CreateMember, listID string) (*Member, error) {
 
 	if err := missingField(listID, "listID"); err != nil {
-		c.Log().Debug(err.Error, caller())
+		Log.Info(err.Error, caller())
 		return nil, err
 	}
 
 	if err := missingField(data.Status, "status"); err != nil {
-		c.Log().Debug(err.Error, caller())
+		Log.Info(err.Error, caller())
 		return nil, err
 	}
 
 	response, err := c.Post(slashJoin(ListsURL, listID, MembersURL), nil, data)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var member *Member
 	err = json.Unmarshal(response, &member)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -154,10 +154,10 @@ func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, err
 	p := requestParameters(params)
 	response, err := c.Get(slashJoin(ListsURL, listID, MembersURL), p)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID": listID,
 			"error":  err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -181,22 +181,22 @@ func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, err
 func (c *Client) GetMember(id string, listID string) (*Member, error) {
 	response, err := c.Get(slashJoin(ListsURL, listID, MembersURL, id), nil)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   listID,
 			"memberID": id,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var member *Member
 	err = json.Unmarshal(response, &member)
 	if err != nil {
-		c.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   listID,
 			"memberID": id,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
@@ -212,11 +212,11 @@ func (m *Member) Delete() error {
 	}
 	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MembersURL, m.ID))
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"memberID": m.ID,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return err
 	}
 
@@ -234,22 +234,22 @@ func (m *Member) Update(data *UpdateMember) (*Member, error) {
 	// otherwhise the API will tell us it's gone.
 	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, MembersURL, m.ID), nil, data)
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"memberID": m.ID,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 
 	var member *Member
 	err = json.Unmarshal(response, &member)
 	if err != nil {
-		m.client.Log().WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
 			"memberID": m.ID,
 			"error":    err.Error(),
-		}).Debug("response error", caller())
+		}).Error("response error", caller())
 		return nil, err
 	}
 

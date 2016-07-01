@@ -16,6 +16,13 @@ import (
 	"github.com/Sirupsen/logrus"
 )
 
+// Log is a global logging instance. Replace this with
+// your own logrus instance with custom settings if
+// you want to. Default log level is logrus.PanicLevel,
+// exluding all log statements by default.
+// Change to  logrus.DebugLevel to see very verbose output.
+var Log = logrus.New()
+
 // Client handles communication with mailchimp servers
 // it fulfills the MailchimpClient interface
 type Client struct {
@@ -36,7 +43,7 @@ func NewClient(token string) *Client {
 
 	split := strings.Split(token, "-")
 	if len(split) != 2 {
-		logrus.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"token": token,
 		}).Debug("malformed token", caller())
 		return nil
@@ -49,27 +56,7 @@ func NewClient(token string) *Client {
 		APIURL:     apiurl,
 		HTTPClient: httpclient,
 		debug:      false,
-		log:        logrus.New(),
 	}
-}
-
-// Debug will print some request debug information to console.
-// toggle with set parameter
-func (c *Client) Debug(set ...bool) bool {
-	if len(set) > 0 {
-		c.debug = set[0]
-	}
-	if c.debug {
-		c.log.Level = logrus.DebugLevel
-	} else {
-		c.log.Level = logrus.ErrorLevel
-	}
-	return c.debug
-}
-
-// Log returns a logrus interface
-func (c *Client) Log() *logrus.Logger {
-	return c.log
 }
 
 // Clone returns a client with the same preferences.
@@ -80,7 +67,6 @@ func (c *Client) Clone() *Client {
 		APIURL:     c.APIURL,
 		HTTPClient: &http.Client{},
 		debug:      c.debug,
-		log:        c.log,
 	}
 }
 
@@ -96,9 +82,9 @@ func (c *Client) Get(resource string, parameters map[string]interface{}) ([]byte
 
 	req, err := http.NewRequest("GET", singleJoiningSlash(c.APIURL, resource), nil)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("malformed request", caller())
+		}).Error("malformed request", caller())
 		return nil, err
 	}
 
@@ -114,18 +100,18 @@ func (c *Client) Post(resource string, parameters map[string]interface{}, data i
 
 	js, err := json.Marshal(data)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("json error", caller())
+		}).Error("json error", caller())
 		return nil, err
 	}
 
 	body := bytes.NewBuffer(js)
 	req, err := http.NewRequest("POST", singleJoiningSlash(c.APIURL, resource), body)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("malformed request", caller())
+		}).Error("malformed request", caller())
 		return nil, err
 	}
 
@@ -141,18 +127,18 @@ func (c *Client) Patch(resource string, parameters map[string]interface{}, data 
 
 	js, err := json.Marshal(data)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("json error", caller())
+		}).Error("json error", caller())
 		return nil, err
 	}
 
 	body := bytes.NewBuffer(js)
 	req, err := http.NewRequest("PATCH", singleJoiningSlash(c.APIURL, resource), body)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("malformed request", caller())
+		}).Error("malformed request", caller())
 		return nil, err
 	}
 
@@ -169,18 +155,18 @@ func (c *Client) Put(resource string, parameters map[string]interface{}, data in
 
 	js, err := json.Marshal(data)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("json error", caller())
+		}).Error("json error", caller())
 		return nil, err
 	}
 
 	body := bytes.NewBuffer(js)
 	req, err := http.NewRequest("PUT", singleJoiningSlash(c.APIURL, resource), body)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("malformed request", caller())
+		}).Error("malformed request", caller())
 		return nil, err
 	}
 
@@ -195,9 +181,9 @@ func (c *Client) Delete(resource string) error {
 
 	req, err := http.NewRequest("DELETE", singleJoiningSlash(c.APIURL, resource), nil)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("malformed request", caller())
+		}).Error("malformed request", caller())
 		return err
 	}
 	_, err = c.Do(req)
@@ -213,11 +199,11 @@ func (c *Client) Do(request *http.Request) ([]byte, error) {
 	}
 
 	_requestCount++
-	c.log.WithFields(logrus.Fields{
-		"request_count": _requestCount,
-		"method":        request.Method,
-		"url":           request.URL,
-	}).Debug(request.Method, "request")
+	Log.WithFields(logrus.Fields{
+		"count":  _requestCount,
+		"method": request.Method,
+		"url":    request.URL,
+	}).Debug(request.Method, " request")
 
 	// Do we have a batch operation running currently?
 	if c.Batch != nil {
@@ -230,9 +216,9 @@ func (c *Client) Do(request *http.Request) ([]byte, error) {
 
 	resp, err := c.HTTPClient.Do(request)
 	if err != nil {
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
-		}).Debug("request error", caller())
+		}).Error("request error", caller())
 		return nil, err
 	}
 	defer resp.Body.Close()
@@ -241,9 +227,9 @@ func (c *Client) Do(request *http.Request) ([]byte, error) {
 	case http.StatusOK:
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			c.log.WithFields(logrus.Fields{
+			Log.WithFields(logrus.Fields{
 				"error": err.Error(),
-			}).Debug("response error", caller())
+			}).Info("response error", caller())
 			return nil, err
 		}
 		return body, nil
@@ -253,11 +239,11 @@ func (c *Client) Do(request *http.Request) ([]byte, error) {
 		return []byte{}, nil
 
 	default:
-		c.log.WithFields(logrus.Fields{
+		Log.WithFields(logrus.Fields{
 			"code":   resp.StatusCode,
 			"method": request.Method,
 			"url":    request.URL.String(),
-		}).Debug("non success response code", caller())
+		}).Info("non success response code", caller())
 
 		err := c.handleError(resp)
 		return nil, err
@@ -292,7 +278,7 @@ func (c *Client) handleError(response *http.Response) Error {
 	var e Error
 	err = json.Unmarshal(body, &e)
 	if err != nil {
-		c.log.Debug(string(body))
+		Log.Debug(string(body))
 		return Error{
 			Title:  "Response error",
 			Detail: err.Error(),
