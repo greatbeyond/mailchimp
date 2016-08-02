@@ -10,7 +10,7 @@ import (
 	"net/http"
 
 	"github.com/Sirupsen/logrus"
-	t "github.com/greatbeyond/mailchimp.v3/testing"
+	t "github.com/greatbeyond/mailchimp/testing"
 
 	check "gopkg.in/check.v1"
 )

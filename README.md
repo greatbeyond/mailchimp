@@ -1,4 +1,4 @@
-# mailchimp.v3
+# mailchimp
 MailChimp API v3 lib in Go
 
 ## Create a client
