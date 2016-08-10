@@ -7,6 +7,7 @@ package mailchimp
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 
 	"github.com/Sirupsen/logrus"
@@ -52,7 +53,10 @@ type CreateSegment struct {
 	// The name of the segment.
 	Name string `json:"name,omitempty"`
 
-	// An array of emails to be used for a static segment. Any emails provided that are not present on the list will be ignored. Passing an empty array will create a static segment without any subscribers. This field cannot be provided with the options field.
+	// An array of emails to be used for a static segment.
+	// Any emails provided that are not present on the list will be ignored.
+	// Passing an empty array will create a static segment without any subscribers.
+	// This field cannot be provided with the options field.
 	StaticSegment []string `json:"static_segment,omitempty"`
 
 	// The conditions of the segment. Static and fuzzy segments don’t have conditions.
@@ -73,12 +77,11 @@ func (c *Client) NewSegment() *Segment {
 // CreateSegment Creates a segment object and inserts it
 func (c *Client) CreateSegment(data *CreateSegment, listID string) (*Segment, error) {
 
-	if err := missingField(listID, "listID"); err != nil {
-		Log.Info(err.Error(), caller())
-		return nil, err
+	if listID == "" {
+		return nil, fmt.Errorf("missing argument: listID")
 	}
 
-	if err := missingField(data.Name, "name"); err != nil {
+	if err := missingField(*data, "Name"); err != nil {
 		Log.Info(err.Error(), caller())
 		return nil, err
 	}

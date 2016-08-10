@@ -14,18 +14,18 @@ import (
 	check "gopkg.in/check.v1"
 )
 
-var _ = check.Suite(&SegmentsSuite{})
+var _ = check.Suite(&SegmentSuite{})
 
-type SegmentsSuite struct {
+type SegmentSuite struct {
 	client *Client
 	server *t.MockServer
 }
 
-func (s *SegmentsSuite) SetUpSuite(c *check.C) {
+func (s *SegmentSuite) SetUpSuite(c *check.C) {
 
 }
 
-func (s *SegmentsSuite) SetUpTest(c *check.C) {
+func (s *SegmentSuite) SetUpTest(c *check.C) {
 	s.server = t.NewMockServer()
 	s.server.SetChecker(c)
 
@@ -34,9 +34,9 @@ func (s *SegmentsSuite) SetUpTest(c *check.C) {
 	s.client.APIURL = strings.Replace(s.client.APIURL, "https://", "http://", 1)
 }
 
-func (s *SegmentsSuite) TearDownTest(c *check.C) {}
+func (s *SegmentSuite) TearDownTest(c *check.C) {}
 
-func (s *SegmentsSuite) Test_NewSegment(c *check.C) {
+func (s *SegmentSuite) Test_NewSegment(c *check.C) {
 	seg := s.client.NewSegment()
 	c.Assert(seg.client, check.Not(check.IsNil))
 }
@@ -44,7 +44,7 @@ func (s *SegmentsSuite) Test_NewSegment(c *check.C) {
 // --------------------------------------------------------------
 // Create
 
-func (s *SegmentsSuite) Test_CreateSegment_Normal(c *check.C) {
+func (s *SegmentSuite) Test_CreateSegment_Normal(c *check.C) {
 
 	create := &CreateSegment{
 		Name: "Segment in list",
@@ -86,7 +86,7 @@ func (s *SegmentsSuite) Test_CreateSegment_Normal(c *check.C) {
 	})
 }
 
-func (s *SegmentsSuite) Test_CreateSegment_MissingName(c *check.C) {
+func (s *SegmentSuite) Test_CreateSegment_MissingName(c *check.C) {
 	create := &CreateSegment{
 		// Name: "Segment in list",
 		StaticSegment: []string{
@@ -99,16 +99,16 @@ func (s *SegmentsSuite) Test_CreateSegment_MissingName(c *check.C) {
 		},
 	}
 	_, err := s.client.CreateSegment(create, "57afe96172")
-	c.Assert(err, check.ErrorMatches, "missing field: name")
+	c.Assert(err, check.ErrorMatches, "missing field: Name")
 }
 
-func (s *SegmentsSuite) Test_CreateSegment_MissingListID(c *check.C) {
+func (s *SegmentSuite) Test_CreateSegment_MissingListID(c *check.C) {
 	create := &CreateSegment{}
 	_, err := s.client.CreateSegment(create, "")
-	c.Assert(err, check.ErrorMatches, "missing field: listID")
+	c.Assert(err, check.ErrorMatches, "missing argument: listID")
 }
 
-func (s *SegmentsSuite) Test_CreateSegment_BadResponse(c *check.C) {
+func (s *SegmentSuite) Test_CreateSegment_BadResponse(c *check.C) {
 	create := &CreateSegment{
 		Name: "Segment in list",
 	}
@@ -124,7 +124,7 @@ func (s *SegmentsSuite) Test_CreateSegment_BadResponse(c *check.C) {
 	c.Assert(segment, check.IsNil)
 }
 
-func (s *SegmentsSuite) Test_CreateSegment_UnknownResponse(c *check.C) {
+func (s *SegmentSuite) Test_CreateSegment_UnknownResponse(c *check.C) {
 	create := &CreateSegment{
 		Name: "Segment in list",
 	}
@@ -143,7 +143,7 @@ func (s *SegmentsSuite) Test_CreateSegment_UnknownResponse(c *check.C) {
 // --------------------------------------------------------------
 // GetSegments
 
-func (s *SegmentsSuite) Test_GetSegments_Normal(c *check.C) {
+func (s *SegmentSuite) Test_GetSegments_Normal(c *check.C) {
 
 	s.server.AddResponse(&t.MockResponse{
 		Method: "GET",
@@ -175,7 +175,7 @@ func (s *SegmentsSuite) Test_GetSegments_Normal(c *check.C) {
 
 }
 
-func (s *SegmentsSuite) Test_GetSegments_BadResponse(c *check.C) {
+func (s *SegmentSuite) Test_GetSegments_BadResponse(c *check.C) {
 	s.server.AddResponse(&t.MockResponse{
 		Method: "GET",
 		Code:   200,
@@ -187,7 +187,7 @@ func (s *SegmentsSuite) Test_GetSegments_BadResponse(c *check.C) {
 	c.Assert(segments, check.IsNil)
 }
 
-func (s *SegmentsSuite) Test_GetSegments_UnknownResponse(c *check.C) {
+func (s *SegmentSuite) Test_GetSegments_UnknownResponse(c *check.C) {
 	s.server.AddResponse(&t.MockResponse{
 		Method: "GET",
 		Code:   111,
@@ -202,7 +202,7 @@ func (s *SegmentsSuite) Test_GetSegments_UnknownResponse(c *check.C) {
 // --------------------------------------------------------------
 // GetSegment
 
-func (s *SegmentsSuite) Test_GetSegment_Normal(c *check.C) {
+func (s *SegmentSuite) Test_GetSegment_Normal(c *check.C) {
 
 	s.server.AddResponse(&t.MockResponse{
 		Method: "GET",
@@ -233,7 +233,7 @@ func (s *SegmentsSuite) Test_GetSegment_Normal(c *check.C) {
 
 }
 
-func (s *SegmentsSuite) Test_GetSegment_BadResponse(c *check.C) {
+func (s *SegmentSuite) Test_GetSegment_BadResponse(c *check.C) {
 	s.server.AddResponse(&t.MockResponse{
 		Method: "GET",
 		Code:   200,
@@ -245,7 +245,7 @@ func (s *SegmentsSuite) Test_GetSegment_BadResponse(c *check.C) {
 	c.Assert(segment, check.IsNil)
 }
 
-func (s *SegmentsSuite) Test_GetSegment_UnknownResponse(c *check.C) {
+func (s *SegmentSuite) Test_GetSegment_UnknownResponse(c *check.C) {
 	s.server.AddResponse(&t.MockResponse{
 		Method: "GET",
 		Code:   111,
@@ -260,7 +260,7 @@ func (s *SegmentsSuite) Test_GetSegment_UnknownResponse(c *check.C) {
 // --------------------------------------------------------------
 // Delete
 
-func (s *SegmentsSuite) Test_Delete_Normal(c *check.C) {
+func (s *SegmentSuite) Test_Delete_Normal(c *check.C) {
 
 	segment := &Segment{
 		ID:     49377,
@@ -282,7 +282,7 @@ func (s *SegmentsSuite) Test_Delete_Normal(c *check.C) {
 
 }
 
-func (s *SegmentsSuite) Test_Delete_NoClient(c *check.C) {
+func (s *SegmentSuite) Test_Delete_NoClient(c *check.C) {
 	segment := &Segment{
 		ID:     49377,
 		ListID: "57afe96172",
@@ -291,7 +291,7 @@ func (s *SegmentsSuite) Test_Delete_NoClient(c *check.C) {
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
-func (s *SegmentsSuite) Test_Delete_UnknownResponse(c *check.C) {
+func (s *SegmentSuite) Test_Delete_UnknownResponse(c *check.C) {
 	segment := &Segment{
 		ID:     49377,
 		ListID: "57afe96172",
@@ -312,7 +312,7 @@ func (s *SegmentsSuite) Test_Delete_UnknownResponse(c *check.C) {
 // --------------------------------------------------------------
 // Update
 
-func (s *SegmentsSuite) Test_Update_Normal(c *check.C) {
+func (s *SegmentSuite) Test_Update_Normal(c *check.C) {
 
 	segment := &Segment{
 		ID:     49377,
@@ -360,7 +360,7 @@ func (s *SegmentsSuite) Test_Update_Normal(c *check.C) {
 	})
 }
 
-func (s *SegmentsSuite) Test_Update_Missing_Client(c *check.C) {
+func (s *SegmentSuite) Test_Update_Missing_Client(c *check.C) {
 	segment := &Segment{
 		ID:     49377,
 		ListID: "57afe96172",
@@ -370,7 +370,7 @@ func (s *SegmentsSuite) Test_Update_Missing_Client(c *check.C) {
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
-func (s *SegmentsSuite) Test_Update_BadResponse(c *check.C) {
+func (s *SegmentSuite) Test_Update_BadResponse(c *check.C) {
 	updSegm := &UpdateSegment{
 		Name: "Segment in list",
 	}
@@ -391,7 +391,7 @@ func (s *SegmentsSuite) Test_Update_BadResponse(c *check.C) {
 	c.Assert(upd, check.IsNil)
 }
 
-func (s *SegmentsSuite) Test_Update_UnknownResponse(c *check.C) {
+func (s *SegmentSuite) Test_Update_UnknownResponse(c *check.C) {
 	updSegm := &UpdateSegment{
 		Name: "Segment in list",
 	}
