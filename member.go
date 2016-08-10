@@ -7,6 +7,7 @@ package mailchimp
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -29,38 +30,63 @@ const (
 	Pending      MemberStatus = "pending"
 )
 
+// Member manages members of a specific MailChimp list, including currently subscribed, unsubscribed, and bounced members.
+// http://developer.mailchimp.com/documentation/mailchimp/reference/lists/members/#
 type Member struct {
-	ID              string       `json:"id"`
-	EmailAddress    string       `json:"email_address"`
-	UniqueEmailID   string       `json:"unique_email_id"`
-	EmailType       string       `json:"email_type"`
-	Status          string       `json:"status"`
-	MergeFields     interface{}  `json:"merge_fields"`
-	Stats           *MemberStats `json:"stats"`
-	IPSignup        string       `json:"ip_signup"`
-	TimestampSignup string       `json:"timestamp_signup"`
-	IPOpt           string       `json:"ip_opt"`
-	TimestampOpt    string       `json:"timestamp_opt"`
-	MemberRating    int          `json:"member_rating"`
-	LastChanged     string       `json:"last_changed"`
-	Language        string       `json:"language"`
-	Vip             bool         `json:"vip"`
-	EmailClient     string       `json:"email_client"`
-	Location        *Location    `json:"location"`
-	ListID          string       `json:"list_id"`
+	// The MD5 hash of the lowercase version of the list member’s email address.
+	ID string `                         json:"id,omitempty"`
+	// Email address for a subscriber.
+	EmailAddress string `               json:"email_address,omitempty"`
+	// An identifier for the address across all of MailChimp.
+	UniqueEmailID string `              json:"unique_email_id,omitempty"`
+	// Type of email this member asked to get (‘html’ or ‘text’).
+	EmailType MailType `                json:"email_type,omitempty"`
+	// Subscriber’s current status.
+	Status MemberStatus `               json:"status,omitempty"`
+	// An individual merge var and value for a member.
+	MergeFields interface{} `           json:"merge_fields,omitempty"`
+	// The key of this object’s properties is the ID of the interest in question.
+	Interests map[string]bool `         json:"interests,omitempty"`
+	// Open and click rates for this subscriber.
+	Stats MemberStats `                json:"stats,omitempty"`
+	// IP address the subscriber signed up from.
+	IPSignup string `                   json:"ip_signup,omitempty"`
+	// The date and time the subscriber signed up for the list.
+	TimestampSignup string `            json:"timestamp_signup,omitempty"`
+	// The IP address the subscriber used to confirm their opt-in status.
+	IPOpt string `                      json:"ip_opt,omitempty"`
+	// The date and time the subscribe confirmed their opt-in status.
+	TimestampOpt string `               json:"timestamp_opt,omitempty"`
+	// Star rating for this member, between 1 and 5.
+	MemberRating int `                  json:"member_rating,omitempty"`
+	// The date and time the member’s info was last changed.
+	LastChanged string `                json:"last_changed,omitempty"`
+	// If set/detected, the subscriber’s language.
+	Language string `                   json:"language,omitempty"`
+	// VIP status for subscriber.
+	Vip bool `                          json:"vip,omitempty"`
+	// The list member’s email client.
+	EmailClient string `                json:"email_client,omitempty"`
+	// Subscriber location information.
+	Location Location `                json:"location,omitempty"`
+	// The most recent Note added about this member.
+	LastNote map[string]interface{} `   json:"last_note,omitempty"`
+	// The list id.
+	ListID string `                     json:"list_id,omitempty"`
 
 	// Internal
 	client MailchimpClient
 }
 
+// CreateMember contains fields to create or update memebrs
 type CreateMember struct {
-	// Email address for a subscriber.
+	// Email address for a subscriber. (required)
 	EmailAddress string `           json:"email_address,omitempty"`
 
 	// Type of email this member asked to get (‘html’ or ‘text’).
 	EmailType MailType `            json:"email_type,omitempty"`
 
-	// Subscriber’s current status. Possible Values:
+	// Subscriber’s current status. (Required) Possible Values:
 	// subscribed, unsubscribed, cleaned, pending
 	Status MemberStatus `           json:"status,omitempty"`
 
@@ -68,7 +94,7 @@ type CreateMember struct {
 	MergeFields interface{} `       json:"merge_fields,omitempty"`
 
 	// The key of this object’s properties is the ID of the interest in question.
-	Interests interface{} `         json:"interests,omitempty"`
+	Interests map[string]bool `     json:"interests,omitempty"`
 
 	// If set/detected, the subscriber’s language.
 	Language string `               json:"language,omitempty"`
@@ -86,17 +112,26 @@ type CreateMember struct {
 type UpdateMember CreateMember
 
 type MemberStats struct {
-	AvgOpenRate  float64 `json:"avg_open_rate"`
-	AvgClickRate float64 `json:"avg_click_rate"`
+	// A subscriber’s average open rate.
+	AvgOpenRate float64 `json:"avg_open_rate,omitempty"`
+	// A subscriber’s average clickthrough rate.
+	AvgClickRate float64 `json:"avg_click_rate,omitempty"`
 }
 
+// Location points to a geo location and time zone
 type Location struct {
-	Latitude    float64 `json:"latitude"`
-	Longitude   float64 `json:"longitude"`
-	Gmtoff      float64 `json:"gmtoff"`
-	Dstoff      float64 `json:"dstoff"`
-	CountryCode string  `json:"country_code"`
-	Timezone    string  `json:"timezone"`
+	// The location latitude.
+	Latitude float64 `json:"latitude,omitempty"`
+	// The location longitude.
+	Longitude float64 `json:"longitude,omitempty"`
+	// The time difference in hours from GMT.
+	GmtOff int `json:"gmtoff,omitempty"`
+	// The offset for timezones where daylight saving time is observed.
+	DstOff int `json:"dstoff,omitempty"`
+	// The unique code for the location country.
+	CountryCode string `json:"country_code,omitempty"`
+	// The timezone for the location.
+	Timezone string `json:"timezone,omitempty"`
 }
 
 // NewMember returns a empty member object
@@ -109,12 +144,16 @@ func (c *Client) NewMember() *Member {
 // CreateMember Creates a member object and inserts it
 func (c *Client) CreateMember(data *CreateMember, listID string) (*Member, error) {
 
-	if err := missingField(listID, "listID"); err != nil {
+	if listID == "" {
+		return nil, fmt.Errorf("missing argument: listID")
+	}
+
+	if err := missingField(*data, "EmailAddress"); err != nil {
 		Log.Info(err.Error, caller())
 		return nil, err
 	}
 
-	if err := missingField(data.Status, "status"); err != nil {
+	if err := missingField(*data, "Status"); err != nil {
 		Log.Info(err.Error, caller())
 		return nil, err
 	}
