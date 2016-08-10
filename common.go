@@ -8,6 +8,7 @@ package mailchimp
 import (
 	"crypto/md5"
 	"fmt"
+	"reflect"
 	"regexp"
 	"runtime"
 	"strings"
@@ -59,15 +60,31 @@ func StringToTime(str string) (time.Time, error) {
 	return time.Parse(TimeFormat, str)
 }
 
-func missingField(field interface{}, name string) error {
-	err := fmt.Errorf("missing field: %s", name)
-	switch f := field.(type) {
-	case string:
-		if f == "" {
+// missingField will cause error on nil ponters, empty structs and empty strings.
+// The function will allow 0 value ints, floats and other numbers.
+// missingField will not work on pointer to struct, make sure you
+// de-reference the pointer before passing as argument.
+func missingField(obj interface{}, field string) error {
+
+	err := fmt.Errorf("missing field: %s", field)
+
+	rv := reflect.ValueOf(obj)
+	value := rv.FieldByName(field)
+
+	switch value.Kind() {
+	case reflect.Struct:
+		zero := reflect.Zero(value.Type())
+		if reflect.DeepEqual(value.Interface(), zero.Interface()) {
+			return err
+		}
+	case reflect.Ptr:
+		if value.IsNil() {
 			return err
 		}
 	default:
-		if f == nil {
+		// last ditch, check for empty string.
+		// this will allow 0-value ints, floats and other numbers
+		if value.String() == "" {
 			return err
 		}
 	}
