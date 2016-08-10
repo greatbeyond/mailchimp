@@ -1,3 +1,8 @@
+// Copyright (C) 2016 Great Beyond AB - All Rights Reserved
+// Unauthorized copying of this file, via any medium is strictly prohibited
+// Proprietary and confidential
+// Written by Sonny Vidfamn <sonny.vidfamn@greatbeyond.se>, 2016
+
 package mailchimp
 
 import (

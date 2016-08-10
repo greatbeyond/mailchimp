@@ -100,17 +100,16 @@ func (c *Client) NewMergeField() *MergeField {
 // CreateMergeField Creates a field object and inserts it
 func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*MergeField, error) {
 
-	if err := missingField(listID, "listID"); err != nil {
+	if listID == "" {
+		return nil, fmt.Errorf("missing argument: listID")
+	}
+
+	if err := missingField(*data, "Name"); err != nil {
 		Log.Info(err.Error(), caller())
 		return nil, err
 	}
 
-	if err := missingField(data.Name, "Name"); err != nil {
-		Log.Info(err.Error(), caller())
-		return nil, err
-	}
-
-	if err := missingField(string(data.Type), "Type"); err != nil {
+	if err := missingField(*data, "Type"); err != nil {
 		Log.Info(err.Error(), caller())
 		return nil, err
 	}

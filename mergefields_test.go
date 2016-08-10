@@ -127,7 +127,7 @@ func (s *MergeFieldSuite) Test_CreateMergeField_LongTag(c *check.C) {
 func (s *MergeFieldSuite) Test_CreateMergeField_MissingListID(c *check.C) {
 	create := &CreateMergeField{}
 	_, err := s.client.CreateMergeField(create, "")
-	c.Assert(err, check.ErrorMatches, "missing field: listID")
+	c.Assert(err, check.ErrorMatches, "missing argument: listID")
 }
 
 func (s *MergeFieldSuite) Test_CreateMergeField_BadResponse(c *check.C) {

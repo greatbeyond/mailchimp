@@ -23,23 +23,59 @@ const ListsURL = "/lists"
 
 // List defines a Mailchimp list as received from server
 type List struct {
-	ID                 string            `json:"id"`
-	Name               string            `json:"name"`
-	Contact            *Contact          `json:"contact"`
-	PermissionReminder string            `json:"permission_reminder"`
-	UseArchiveBar      bool              `json:"use_archive_bar"`
-	CampaignDefaults   *CampaignDefaults `json:"campaign_defaults"`
 
-	NotifyOnSubscribe   string         `json:"notify_on_subscribe"`
-	NotifyOnUnsubscribe string         `json:"notify_on_unsubscribe"`
-	DateCreatedString   string         `json:"date_created"`
-	ListRating          int            `json:"list_rating"`
-	EmailTypeOption     bool           `json:"email_type_option"`
-	SubscribeURLShort   string         `json:"subscribe_url_short"`
-	SubscribeURLLong    string         `json:"subscribe_url_long"`
-	BeamerAddress       string         `json:"beamer_address"`
-	Visibility          ListVisibility `json:"visibility"`
-	Stats               *ListStats     `json:"stats"`
+	// A string that uniquely identifies this list.
+	ID string `json:"id,omitempty"`
+
+	// The name of the list.
+	Name string `json:"name,omitempty"`
+
+	// Contact information displayed in campaign footers to comply with international spam laws.
+	Contact *Contact `json:"contact,omitempty"`
+
+	// The permission reminder for the list.
+	PermissionReminder string `json:"permission_reminder,omitempty"`
+
+	// Whether campaigns for this list use the Archive Bar in archives by default.
+	UseArchiveBar bool `json:"use_archive_bar,omitempty"`
+
+	// Default values for campaigns created for this list.
+	CampaignDefaults *CampaignDefaults `json:"campaign_defaults,omitempty"`
+
+	// The email address to send subscribe notifications to.
+	NotifyOnSubscribe string `json:"notify_on_subscribe,omitempty"`
+
+	// The email address to send unsubscribe notifications to.
+	NotifyOnUnsubscribe string `json:"notify_on_unsubscribe,omitempty"`
+
+	// The date and time that this list was created.
+	DateCreated string `json:"date_created,omitempty"`
+
+	// An auto-generated activity score for the list (0-5).
+	ListRating int `json:"list_rating,omitempty"`
+
+	// Whether the list supports multiple formats for emails. When set to true,
+	// subscribers can choose whether they want to receive HTML or plain-text
+	// emails. When set to false, subscribers will receive HTML emails, with a plain-text alternative backup.
+	EmailTypeOption bool `json:"email_type_option,omitempty"`
+
+	// Our EepURL shortened version of this list’s subscribe form.
+	SubscribeURLShort string `json:"subscribe_url_short,omitempty"`
+
+	// The full version of this list’s subscribe form (host will vary).
+	SubscribeURLLong string `json:"subscribe_url_long,omitempty"`
+
+	// The list’s Email Beamer address.
+	BeamerAddress string `json:"beamer_address,omitempty"`
+
+	// Whether this list is public or private.
+	Visibility ListVisibility `json:"visibility,omitempty"`
+
+	// Any list-specific modules installed for this list.
+	Modules []interface{} `json:"modules,omitempty"`
+
+	// Stats for the list. Many of these are cached for at least five minutes.
+	Stats *ListStats `json:"stats,omitempty"`
 
 	// Internal
 	client MailchimpClient
@@ -86,7 +122,7 @@ type CreateList struct {
 // different requiered fields (checked in function)
 type UpdateList CreateList
 
-// List contact information
+// Contact for list information
 type Contact struct {
 	Company  string `json:"company"    bson:"company"`
 	Address1 string `json:"address1"   bson:"address1"`
@@ -98,7 +134,7 @@ type Contact struct {
 	Phone    string `json:"phone"      bson:"phone"`
 }
 
-// List campaign default values
+// CampaignDefaults is added to lists
 type CampaignDefaults struct {
 	FromName  string `json:"from_name"  bson:"from_name"`
 	FromEmail string `json:"from_email" bson:"from_email"`
@@ -106,7 +142,7 @@ type CampaignDefaults struct {
 	Language  string `json:"language"   bson:"language"`
 }
 
-// Mailchimp list stats recevied from server
+// ListStats are stats recevied from server
 type ListStats struct {
 	MemberCount               int     `json:"member_count"`
 	UnsubscribeCount          int     `json:"unsubscribe_count"`
@@ -126,7 +162,7 @@ type ListStats struct {
 	LastUnsubDate             string  `json:"last_unsub_date"`
 }
 
-func (c *Client) NewList(data *CreateList) (*List, error) {
+func (c *Client) CreateList(data *CreateList) (*List, error) {
 	response, err := c.Post(ListsURL, nil, data)
 	if err != nil {
 		Log.Error(err.Error(), caller())
@@ -232,8 +268,8 @@ func (l *List) Delete() error {
 	return l.client.Delete(slashJoin(ListsURL, l.ID))
 }
 
-// DateCreated converts DateCreatedString to a time.Time object
-func (l *List) DateCreated() time.Time {
-	d, _ := StringToTime(l.DateCreatedString)
+// TimeCreated converts DateCreated to a time.Time object
+func (l *List) TimeCreated() time.Time {
+	d, _ := StringToTime(l.DateCreated)
 	return d
 }

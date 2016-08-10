@@ -95,6 +95,7 @@ func (suite *BatchTestSuite) Test_Batch_CreateMember(c *check.C) {
 
 	_, err := client.CreateMember(&CreateMember{
 		EmailAddress: "test@example.net",
+		Status:       Subscribed,
 	}, "123456")
 	c.Assert(err, check.IsNil)
 
@@ -102,7 +103,7 @@ func (suite *BatchTestSuite) Test_Batch_CreateMember(c *check.C) {
 	c.Assert(client.Batch.Operations[0], check.DeepEquals, &BatchOperation{
 		Method: "POST",
 		Path:   "/lists/123456/members",
-		Body:   `{"email_address":"test@example.net"}`,
+		Body:   `{"email_address":"test@example.net","status":"subscribed"}`,
 	})
 
 }
