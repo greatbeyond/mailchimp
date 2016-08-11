@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// Denotes list visibility for creation
+// ListVisibility denotes list visibility when creating and updating lists
 type ListVisibility string
 
 const (
@@ -31,7 +31,7 @@ type List struct {
 	Name string `json:"name,omitempty"`
 
 	// Contact information displayed in campaign footers to comply with international spam laws.
-	Contact *Contact `json:"contact,omitempty"`
+	Contact Contact `json:"contact,omitempty"`
 
 	// The permission reminder for the list.
 	PermissionReminder string `json:"permission_reminder,omitempty"`
@@ -40,7 +40,7 @@ type List struct {
 	UseArchiveBar bool `json:"use_archive_bar,omitempty"`
 
 	// Default values for campaigns created for this list.
-	CampaignDefaults *CampaignDefaults `json:"campaign_defaults,omitempty"`
+	CampaignDefaults CampaignDefaults `json:"campaign_defaults,omitempty"`
 
 	// The email address to send subscribe notifications to.
 	NotifyOnSubscribe string `json:"notify_on_subscribe,omitempty"`
@@ -75,52 +75,11 @@ type List struct {
 	Modules []interface{} `json:"modules,omitempty"`
 
 	// Stats for the list. Many of these are cached for at least five minutes.
-	Stats *ListStats `json:"stats,omitempty"`
+	Stats ListStats `json:"stats,omitempty"`
 
 	// Internal
 	client MailchimpClient
 }
-
-// CreateList defines fields neccessary to create a new list.
-// Some fields are optional:
-// 		UseArchiveBar, NotifyOnSubscribe, NotifyOnUnsubscribe, Visibility
-//
-type CreateList struct {
-	// The name of the list.
-	Name string `                        json:"name"`
-
-	// Contact information displayed in campaign footers to comply with international spam laws.
-	Contact *Contact `                   json:"contact"`
-
-	// The permission reminder for the list.
-	PermissionReminder string `          json:"permission_reminder"`
-
-	// Whether campaigns for this list use the Archive Bar in archives by default.
-	UseArchiveBar bool `                 json:"use_archive_bar,omitempty"`
-
-	// Default values for campaigns created for this list.
-	CampaignDefaults *CampaignDefaults ` json:"campaign_defaults"`
-
-	// The email address to send subscribe notifications to.
-	NotifyOnSubscribe string `           json:"notify_on_subscribe,omitempty"`
-
-	// The email address to send unsubscribe notifications to.
-	NotifyOnUnsubscribe string `         json:"notify_on_unsubscribe,omitempty"`
-
-	// Whether the list supports multiple formats for emails. When set
-	// to true, subscribers can choose whether they want to receive HTML
-	// or plain-text emails. When set to false, subscribers will receive
-	// HTML emails, with a plain-text alternative backup.
-	EmailTypeOption bool `              json:"email_type_option"`
-
-	// Whether this list is public or private. Possible Values:
-	// pub, prv
-	Visibility ListVisibility `         json:"visibility,omitempty"`
-}
-
-// UpdateList and CreateList are the same but with slighlty
-// different requiered fields (checked in function)
-type UpdateList CreateList
 
 // Contact for list information
 type Contact struct {
@@ -162,7 +121,64 @@ type ListStats struct {
 	LastUnsubDate             string  `json:"last_unsub_date"`
 }
 
+// CreateList defines fields neccessary to create a new list.
+// Some fields are optional:
+// 		UseArchiveBar, NotifyOnSubscribe, NotifyOnUnsubscribe, Visibility
+//
+type CreateList struct {
+	// The name of the list.
+	Name string `                        json:"name,omitempty"`
+
+	// Contact information displayed in campaign footers to comply with international spam laws.
+	Contact *Contact `                   json:"contact,omitempty"`
+
+	// The permission reminder for the list.
+	PermissionReminder string `          json:"permission_reminder,omitempty"`
+
+	// Whether campaigns for this list use the Archive Bar in archives by default.
+	UseArchiveBar bool `                 json:"use_archive_bar,omitempty"`
+
+	// Default values for campaigns created for this list.
+	CampaignDefaults *CampaignDefaults ` json:"campaign_defaults,omitempty"`
+
+	// The email address to send subscribe notifications to.
+	NotifyOnSubscribe string `           json:"notify_on_subscribe,omitempty"`
+
+	// The email address to send unsubscribe notifications to.
+	NotifyOnUnsubscribe string `         json:"notify_on_unsubscribe,omitempty"`
+
+	// Whether the list supports multiple formats for emails. When set
+	// to true, subscribers can choose whether they want to receive HTML
+	// or plain-text emails. When set to false, subscribers will receive
+	// HTML emails, with a plain-text alternative backup.
+	EmailTypeOption bool `              json:"email_type_option,omitempty"`
+
+	// Whether this list is public or private. Possible Values:
+	// pub, prv
+	Visibility ListVisibility `         json:"visibility,omitempty"`
+}
+
+// UpdateList and CreateList are the same but with slighlty
+// different requiered fields (checked in function)
+type UpdateList CreateList
+
+// NewList returns a empty member object
+func (c *Client) NewList() *List {
+	return &List{
+		client: c,
+	}
+}
+
+// CreateList Creates a member object and inserts it
 func (c *Client) CreateList(data *CreateList) (*List, error) {
+
+	required := []string{"Name", "Contact", "PermissionReminder", "CampaignDefaults"}
+	for _, field := range required {
+		if err := missingField(*data, field); err != nil {
+			return nil, err
+		}
+	}
+
 	response, err := c.Post(ListsURL, nil, data)
 	if err != nil {
 		Log.Error(err.Error(), caller())

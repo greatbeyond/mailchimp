@@ -203,6 +203,7 @@ func (c *Client) GetMembers(listID string, params ...Parameters) ([]*Member, err
 	var membersResponse *getMembers
 	err = json.Unmarshal(response, &membersResponse)
 	if err != nil {
+		Log.Error(err.Error(), caller())
 		return nil, err
 	}
 
