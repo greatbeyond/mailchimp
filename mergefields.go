@@ -65,6 +65,9 @@ type MergeField struct {
 	client MailchimpClient
 }
 
+// SetClient fulfills ClientType
+func (m *MergeField) SetClient(c MailchimpClient) { m.client = c }
+
 type MergeFieldType string
 
 const (
@@ -91,10 +94,17 @@ type CreateMergeField MergeField
 type UpdateMergeField CreateMergeField
 
 // NewMergeField returns a empty field object
-func (c *Client) NewMergeField() *MergeField {
-	return &MergeField{
+// id is optional, with it you can do a bit of rudimentary chaining.
+// Example:
+//	c.NewMergeField(23).Update(params)
+func (c *Client) NewMergeField(id ...int) *MergeField {
+	s := &MergeField{
 		client: c,
 	}
+	if len(id) > 0 {
+		s.MergeID = id[0]
+	}
+	return s
 }
 
 // CreateMergeField Creates a field object and inserts it

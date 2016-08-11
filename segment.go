@@ -48,6 +48,9 @@ type Segment struct {
 	client MailchimpClient
 }
 
+// SetClient fulfills ClientType
+func (s *Segment) SetClient(c MailchimpClient) { s.client = c }
+
 // CreateSegment sends a request to create a segment
 type CreateSegment struct {
 	// The name of the segment.
@@ -68,10 +71,17 @@ type CreateSegment struct {
 type UpdateSegment CreateSegment
 
 // NewSegment returns a empty segment object
-func (c *Client) NewSegment() *Segment {
-	return &Segment{
+// id is optional, with it you can do a bit of rudimentary chaining.
+// Example:
+//	c.NewSegment(23).Update(params)
+func (c *Client) NewSegment(id ...int) *Segment {
+	s := &Segment{
 		client: c,
 	}
+	if len(id) > 0 {
+		s.ID = id[0]
+	}
+	return s
 }
 
 // CreateSegment Creates a segment object and inserts it

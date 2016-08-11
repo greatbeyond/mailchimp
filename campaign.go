@@ -87,6 +87,9 @@ type Campaign struct {
 	client MailchimpClient
 }
 
+// SetClient fulfills ClientType
+func (m *Campaign) SetClient(c MailchimpClient) { m.client = c }
+
 // CampaignSettings defines settings for a campaign
 type CampaignSettings struct {
 	// The subject line for the campaign.
@@ -283,8 +286,22 @@ type CampaignCreateSettings struct {
 	FbComments bool `            json:"fb_comments,omitempty"`
 }
 
-// NewCampaign creates a new campaign via mailchimp api v3
-func (c *Client) NewCampaign(data *CreateCampaign) (*Campaign, error) {
+// NewCampaign creates a new campaign with the client addressed
+// id is optional, with it you can do a bit of rudimentary chaining.
+// Example:
+//	c.NewCampaign(23).Update(params)
+func (c *Client) NewCampaign(id ...string) *Campaign {
+	s := &Campaign{
+		client: c,
+	}
+	if len(id) > 0 {
+		s.ID = id[0]
+	}
+	return s
+}
+
+// CreateCampaign creates a new campaign via mailchimp api v3
+func (c *Client) CreateCampaign(data *CreateCampaign) (*Campaign, error) {
 	response, err := c.Post(CampaignsURL, nil, data)
 
 	var campaign *Campaign

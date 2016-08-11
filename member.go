@@ -78,6 +78,9 @@ type Member struct {
 	client MailchimpClient
 }
 
+// SetClient fulfills ClientType
+func (m *Member) SetClient(c MailchimpClient) { m.client = c }
+
 // CreateMember contains fields to create or update memebrs
 type CreateMember struct {
 	// Email address for a subscriber. (required)
@@ -135,10 +138,17 @@ type Location struct {
 }
 
 // NewMember returns a empty member object
-func (c *Client) NewMember() *Member {
-	return &Member{
+// id is optional, with it you can do a bit of rudimentary chaining.
+// Example:
+//	c.NewMember(23).Update(params)
+func (c *Client) NewMember(id ...string) *Member {
+	s := &Member{
 		client: c,
 	}
+	if len(id) > 0 {
+		s.ID = id[0]
+	}
+	return s
 }
 
 // CreateMember Creates a member object and inserts it
@@ -245,24 +255,6 @@ func (c *Client) GetMember(id string, listID string) (*Member, error) {
 	return member, nil
 }
 
-func (m *Member) Delete() error {
-
-	if m.client == nil {
-		return ErrorNoClient
-	}
-	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MembersURL, m.ID))
-	if err != nil {
-		Log.WithFields(logrus.Fields{
-			"listID":   m.ListID,
-			"memberID": m.ID,
-			"error":    err.Error(),
-		}).Error("response error", caller())
-		return err
-	}
-
-	return nil
-}
-
 // Update Returns a new Member object with the updated values
 func (m *Member) Update(data *UpdateMember) (*Member, error) {
 
@@ -296,4 +288,22 @@ func (m *Member) Update(data *UpdateMember) (*Member, error) {
 	member.client = m.client
 
 	return member, nil
+}
+
+func (m *Member) Delete() error {
+
+	if m.client == nil {
+		return ErrorNoClient
+	}
+	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MembersURL, m.ID))
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"listID":   m.ListID,
+			"memberID": m.ID,
+			"error":    err.Error(),
+		}).Error("response error", caller())
+		return err
+	}
+
+	return nil
 }

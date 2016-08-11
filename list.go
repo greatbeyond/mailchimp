@@ -81,6 +81,9 @@ type List struct {
 	client MailchimpClient
 }
 
+// SetClient fulfills ClientType
+func (l *List) SetClient(c MailchimpClient) { l.client = c }
+
 // Contact for list information
 type Contact struct {
 	Company  string `json:"company"    bson:"company"`
@@ -163,10 +166,17 @@ type CreateList struct {
 type UpdateList CreateList
 
 // NewList returns a empty member object
-func (c *Client) NewList() *List {
-	return &List{
+// id is optional, with it you can do a bit of rudimentary chaining.
+// Example:
+//	c.NewList(23).Update(params)
+func (c *Client) NewList(id ...string) *List {
+	s := &List{
 		client: c,
 	}
+	if len(id) > 0 {
+		s.ID = id[0]
+	}
+	return s
 }
 
 // CreateList Creates a member object and inserts it

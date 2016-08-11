@@ -40,8 +40,11 @@ type Webhook struct {
 	Links json.RawMessage `json:"_links"`
 
 	// Internal
-	client *Client
+	client MailchimpClient
 }
+
+// SetClient fulfills ClientType
+func (m *Webhook) SetClient(c MailchimpClient) { m.client = c }
 
 // WebhookEvents defines all valid fields for webhook events.
 type WebhookEvents struct {

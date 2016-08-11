@@ -35,6 +35,12 @@ type Client struct {
 	log *logrus.Logger
 }
 
+// ClientType enables you to patch the client on a instance you create
+// without going though the client functions.
+type ClientType interface {
+	SetClient(MailchimpClient)
+}
+
 // increments on each request made to Do()
 var _requestCount int
 
