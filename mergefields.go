@@ -114,12 +114,7 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		return nil, fmt.Errorf("missing argument: listID")
 	}
 
-	if err := missingField(*data, "Name"); err != nil {
-		Log.Info(err.Error(), caller())
-		return nil, err
-	}
-
-	if err := missingField(*data, "Type"); err != nil {
+	if err := hasFields(*data, "Name", "Type"); err != nil {
 		Log.Info(err.Error(), caller())
 		return nil, err
 	}

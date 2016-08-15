@@ -91,7 +91,7 @@ func (c *Client) CreateSegment(data *CreateSegment, listID string) (*Segment, er
 		return nil, fmt.Errorf("missing argument: listID")
 	}
 
-	if err := missingField(*data, "Name"); err != nil {
+	if err := hasFields(*data, "Name"); err != nil {
 		Log.Info(err.Error(), caller())
 		return nil, err
 	}
@@ -187,6 +187,12 @@ func (m *Segment) Delete() error {
 	if m.client == nil {
 		return ErrorNoClient
 	}
+
+	if err := hasFields(*m, "ID", "ListID"); err != nil {
+		Log.Info(err.Error(), caller())
+		return err
+	}
+
 	err := m.client.Delete(slashJoin(ListsURL, m.ListID, SegmentsURL, strconv.Itoa(m.ID)))
 	if err != nil {
 		Log.WithFields(logrus.Fields{

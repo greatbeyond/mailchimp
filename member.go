@@ -158,12 +158,7 @@ func (c *Client) CreateMember(data *CreateMember, listID string) (*Member, error
 		return nil, fmt.Errorf("missing argument: listID")
 	}
 
-	if err := missingField(*data, "EmailAddress"); err != nil {
-		Log.Info(err.Error, caller())
-		return nil, err
-	}
-
-	if err := missingField(*data, "Status"); err != nil {
+	if err := hasFields(*data, "EmailAddress", "Status"); err != nil {
 		Log.Info(err.Error, caller())
 		return nil, err
 	}

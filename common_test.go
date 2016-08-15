@@ -54,17 +54,17 @@ type TestTypeB struct {
 	Content string
 }
 
-func (s *CommonSuite) Test_MissingField_FieldInStruct(c *check.C) {
+func (s *CommonSuite) Test_HasField_FieldInStruct(c *check.C) {
 
 	ok := TestTypeA{StringField: "test"}
 	empty := TestTypeA{}
 
-	c.Assert(missingField(ok, "StringField"), check.IsNil)
-	c.Assert(missingField(empty, "StringField"), check.ErrorMatches, "missing field: StringField")
+	c.Assert(hasField(ok, "StringField"), check.IsNil)
+	c.Assert(hasField(empty, "StringField"), check.ErrorMatches, "missing field: StringField")
 
 }
 
-func (s *CommonSuite) Test_MissingField_TimeField(c *check.C) {
+func (s *CommonSuite) Test_HasField_TimeField(c *check.C) {
 
 	now := time.Now()
 	ok := TestTypeA{TimeField: now, TimePtr: &now}
@@ -72,18 +72,18 @@ func (s *CommonSuite) Test_MissingField_TimeField(c *check.C) {
 	empty := TestTypeA{}
 	empty2 := TestTypeA{TimeField: time.Time{}, TimePtr: nil}
 
-	c.Assert(missingField(ok, "TimeField"), check.IsNil)
-	c.Assert(missingField(ok, "TimePtr"), check.IsNil)
+	c.Assert(hasField(ok, "TimeField"), check.IsNil)
+	c.Assert(hasField(ok, "TimePtr"), check.IsNil)
 
-	c.Assert(missingField(empty, "TimeField"), check.ErrorMatches, "missing field: TimeField")
-	c.Assert(missingField(empty, "TimePtr"), check.ErrorMatches, "missing field: TimePtr")
+	c.Assert(hasField(empty, "TimeField"), check.ErrorMatches, "missing field: TimeField")
+	c.Assert(hasField(empty, "TimePtr"), check.ErrorMatches, "missing field: TimePtr")
 
-	c.Assert(missingField(empty2, "TimeField"), check.ErrorMatches, "missing field: TimeField")
-	c.Assert(missingField(empty2, "TimePtr"), check.ErrorMatches, "missing field: TimePtr")
+	c.Assert(hasField(empty2, "TimeField"), check.ErrorMatches, "missing field: TimeField")
+	c.Assert(hasField(empty2, "TimePtr"), check.ErrorMatches, "missing field: TimePtr")
 
 }
 
-func (s *CommonSuite) Test_MissingField_ObjAndPtr(c *check.C) {
+func (s *CommonSuite) Test_HasField_ObjAndPtr(c *check.C) {
 
 	ok := TestTypeA{
 		PtrField:   &TestTypeB{Content: "Test"},
@@ -92,10 +92,26 @@ func (s *CommonSuite) Test_MissingField_ObjAndPtr(c *check.C) {
 
 	empty := TestTypeA{}
 
-	c.Assert(missingField(ok, "PtrField"), check.IsNil)
-	c.Assert(missingField(ok, "ValueField"), check.IsNil)
+	c.Assert(hasField(ok, "PtrField"), check.IsNil)
+	c.Assert(hasField(ok, "ValueField"), check.IsNil)
 
-	c.Assert(missingField(empty, "PtrField"), check.ErrorMatches, "missing field: PtrField")
-	c.Assert(missingField(empty, "ValueField"), check.ErrorMatches, "missing field: ValueField")
+	c.Assert(hasField(empty, "PtrField"), check.ErrorMatches, "missing field: PtrField")
+	c.Assert(hasField(empty, "ValueField"), check.ErrorMatches, "missing field: ValueField")
 
+}
+
+func (s *CommonSuite) Test_HasFields_FieldInStruct(c *check.C) {
+	ok := TestTypeA{
+		PtrField:   &TestTypeB{Content: "Test"},
+		ValueField: TestTypeB{Content: "Test"},
+	}
+
+	empty := TestTypeA{}
+
+	c.Assert(hasFields(ok, "PtrField", "ValueField"), check.IsNil)
+
+	c.Assert(hasFields(empty, "PtrField", "ValueField"), check.ErrorMatches, "missing field: PtrField")
+
+	empty.PtrField = ok.PtrField
+	c.Assert(hasFields(empty, "PtrField", "ValueField"), check.ErrorMatches, "missing field: ValueField")
 }

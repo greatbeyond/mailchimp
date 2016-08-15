@@ -60,11 +60,20 @@ func StringToTime(str string) (time.Time, error) {
 	return time.Parse(TimeFormat, str)
 }
 
-// missingField will cause error on nil ponters, empty structs and empty strings.
+func hasFields(obj interface{}, fields ...string) error {
+	for _, field := range fields {
+		if err := hasField(obj, field); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// hasField will cause error on nil ponters, empty structs and empty strings.
 // The function will allow 0 value ints, floats and other numbers.
-// missingField will not work on pointer to struct, make sure you
+// hasField will not work on pointer to struct, make sure you
 // de-reference the pointer before passing as argument.
-func missingField(obj interface{}, field string) error {
+func hasField(obj interface{}, field string) error {
 
 	err := fmt.Errorf("missing field: %s", field)
 

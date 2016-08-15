@@ -182,11 +182,9 @@ func (c *Client) NewList(id ...string) *List {
 // CreateList Creates a member object and inserts it
 func (c *Client) CreateList(data *CreateList) (*List, error) {
 
-	required := []string{"Name", "Contact", "PermissionReminder", "CampaignDefaults"}
-	for _, field := range required {
-		if err := missingField(*data, field); err != nil {
-			return nil, err
-		}
+	fields := []string{"Name", "Contact", "PermissionReminder", "CampaignDefaults"}
+	if err := hasFields(*data, fields...); err != nil {
+		return nil, err
 	}
 
 	response, err := c.Post(ListsURL, nil, data)
