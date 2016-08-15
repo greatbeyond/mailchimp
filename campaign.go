@@ -88,7 +88,7 @@ type Campaign struct {
 }
 
 // SetClient fulfills ClientType
-func (m *Campaign) SetClient(c MailchimpClient) { m.client = c }
+func (c *Campaign) SetClient(m MailchimpClient) { c.client = m }
 
 // CampaignSettings defines settings for a campaign
 type CampaignSettings struct {
@@ -535,16 +535,18 @@ type CampaignContentEdit struct {
 	URL string `                json:"url,omitempty"`
 
 	// Use this template to generate the HTML content of the campaign
-	Template struct {
+	Template *struct {
 		// The id of the template to use.
 		ID int `                json:"id,omitempty"`
 
-		// Content for the sections of the template. Each key should be the unique mc:edit area name from the template.
+		// Content for the sections of the template. Each key should be the
+		// unique mc:edit area name from the template.
 		Sections interface{} `  json:"sections,omitempty"`
 	} `json:"template,omitempty"`
 
-	// Available when uploading an archive to create campaign content. The archive should include all campaign content and images. Learn more.
-	Archive struct {
+	// Available when uploading an archive to create campaign content.
+	// The archive should include all campaign content and images. Learn more.
+	Archive *struct {
 		// he base64-encoded representation of the archive file.
 		ArchiveContent string `json:"archive_content,omitempty"`
 
@@ -554,7 +556,9 @@ type CampaignContentEdit struct {
 		ArchiveType string `   json:"archive_type,omitempty"`
 	} `json:"archive,omitempty"`
 
-	// Content options for Multivariate Campaigns. Each content option must provide HTML content and may optionally provide plain text. For campaigns not testing content, only one object should be provided.
+	// Content options for Multivariate Campaigns. Each content option must provide HTML
+	// content and may optionally provide plain text. For campaigns not testing content,
+	// only one object should be provided.
 	VariateContents []interface{} `json:"variate_contents,omitempty"`
 }
 

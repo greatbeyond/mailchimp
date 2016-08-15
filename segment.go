@@ -60,7 +60,10 @@ type CreateSegment struct {
 	// Any emails provided that are not present on the list will be ignored.
 	// Passing an empty array will create a static segment without any subscribers.
 	// This field cannot be provided with the options field.
-	StaticSegment []string `json:"static_segment,omitempty"`
+	//
+	// Due to how json-omitempty works, this needs to be a pointer in order
+	// to make it work with the exclusive-or nature of StaticSegment and Options.
+	StaticSegment *[]string `json:"static_segment,omitempty"`
 
 	// The conditions of the segment. Static and fuzzy segments don’t have conditions.
 	// See API reference for list of possible matching options.
