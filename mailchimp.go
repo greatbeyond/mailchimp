@@ -61,7 +61,6 @@ func NewClient(token string) *Client {
 		token:      token,
 		APIURL:     apiurl,
 		HTTPClient: httpclient,
-		debug:      false,
 	}
 }
 
@@ -72,7 +71,6 @@ func (c *Client) Clone() *Client {
 		token:      c.token,
 		APIURL:     c.APIURL,
 		HTTPClient: &http.Client{},
-		debug:      c.debug,
 	}
 }
 
@@ -210,6 +208,10 @@ func (c *Client) Do(request *http.Request) ([]byte, error) {
 		"method": request.Method,
 		"url":    request.URL,
 	}).Debug(request.Method, " request")
+
+	// // Uncomment to debug the body and Headers of requests. This can be exessive.
+	// dump, _ := httputil.DumpRequestOut(request, request.Method != "GET")
+	// Log.Debug(string(dump))
 
 	// Do we have a batch operation running currently?
 	if c.Batch != nil {
