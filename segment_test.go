@@ -333,7 +333,7 @@ func (s *SegmentSuite) Test_Update_Normal(c *check.C) {
 	}
 
 	s.server.AddResponse(&t.MockResponse{
-		Method: "PUT",
+		Method: "PATCH",
 		Code:   200,
 		Body:   `{"id":49377,"name":"Freddie'sMostPopularJokes","member_count":9,"type":"static","created_at":"2015-09-16 21:14:46","updated_at":"2015-09-16 21:14:47","options":{"match":"any","conditions":[]},"list_id":"57afe96172"}`,
 		CheckFn: func(r *http.Request, body string) {
@@ -381,7 +381,7 @@ func (s *SegmentSuite) Test_Update_BadResponse(c *check.C) {
 	}
 
 	s.server.AddResponse(&t.MockResponse{
-		Method: "PUT",
+		Method: "PATCH",
 		Code:   200,
 		Body:   `{ bad json response`,
 	})
@@ -402,7 +402,7 @@ func (s *SegmentSuite) Test_Update_UnknownResponse(c *check.C) {
 	}
 
 	s.server.AddResponse(&t.MockResponse{
-		Method: "PUT",
+		Method: "PATCH",
 		Code:   111,
 		Body:   `{}`,
 	})

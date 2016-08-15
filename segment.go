@@ -200,16 +200,21 @@ func (m *Segment) Delete() error {
 	return nil
 }
 
-// Updatereturns a new Segment object with the updated values
+// Update returns a new Segment object with the updated values
 func (m *Segment) Update(data *UpdateSegment) (*Segment, error) {
 
 	if m.client == nil {
 		return nil, ErrorNoClient
 	}
 
-	// If the segment was previously deleted we need to use a PUT request,
+	if err := hasFields(*m, "ID", "ListID"); err != nil {
+		Log.Info(err.Error(), caller())
+		return nil, err
+	}
+
+	// If the segment was previously deleted we need to use a PATCH request,
 	// otherwhise the API will tell us it's gone.
-	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, SegmentsURL, strconv.Itoa(m.ID)), nil, data)
+	response, err := m.client.Patch(slashJoin(ListsURL, m.ListID, SegmentsURL, strconv.Itoa(m.ID)), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"list_id":    m.ListID,
