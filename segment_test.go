@@ -37,7 +37,8 @@ func (s *SegmentSuite) SetUpTest(c *check.C) {
 func (s *SegmentSuite) TearDownTest(c *check.C) {}
 
 func (s *SegmentSuite) Test_NewSegment(c *check.C) {
-	seg := s.client.NewSegment()
+	seg := s.client.NewSegment("abc23d")
+	c.Assert(seg.ListID, check.Equals, "abc23d")
 	c.Assert(seg.client, check.Not(check.IsNil))
 }
 
@@ -48,7 +49,7 @@ func (s *SegmentSuite) Test_CreateSegment_Normal(c *check.C) {
 
 	create := &CreateSegment{
 		Name: "Segment in list",
-		StaticSegment: []string{
+		StaticSegment: &[]string{
 			"hsims0@ihg.com",
 			"acox1@alibaba.com",
 			"jlopez2@deliciousdays.com",
@@ -89,7 +90,7 @@ func (s *SegmentSuite) Test_CreateSegment_Normal(c *check.C) {
 func (s *SegmentSuite) Test_CreateSegment_MissingName(c *check.C) {
 	create := &CreateSegment{
 		// Name: "Segment in list",
-		StaticSegment: []string{
+		StaticSegment: &[]string{
 			"hsims0@ihg.com",
 			"acox1@alibaba.com",
 			"jlopez2@deliciousdays.com",
@@ -258,6 +259,66 @@ func (s *SegmentSuite) Test_GetSegment_UnknownResponse(c *check.C) {
 }
 
 // --------------------------------------------------------------
+// GetMembers
+func (s *SegmentSuite) Test_GetMembers_Normal(c *check.C) {
+	s.server.AddResponse(&t.MockResponse{
+		Method: "GET",
+		Code:   200,
+		Body:   `{"members":[{"id":"852aaa9532cb36adfb5e9fef7a4206a9","email_address":"urist.mcvankab+3@freddiesjokes.com","unique_email_id":"fab20fa03d","email_type":"html","status":"subscribed","status_if_new":"","merge_fields":{"FNAME":"","LNAME":""},"interests":{"9143cf3bd1":false,"3a2a927344":false,"f9c8f5f0ff":false},"stats":{"avg_open_rate":0,"avg_click_rate":0},"ip_signup":"","timestamp_signup":"","ip_opt":"198.2.191.34","timestamp_opt":"2015-09-16 19:24:29","member_rating":2,"last_changed":"2015-09-16 19:24:29","language":"","vip":false,"email_client":"","location":{"latitude":0,"longitude":0,"gmtoff":0,"dstoff":0,"country_code":"","timezone":""},"list_id":"57afe96172"}]}`,
+		CheckFn: func(r *http.Request, body string) {
+			c.Assert(r.RequestURI, check.Equals, "http://us13.api.mailchimp.com/3.0/lists/57afe96172/segments/23/members")
+		},
+	})
+
+	segment := s.client.NewSegment("57afe96172", 23)
+	members, err := segment.GetMembers()
+
+	c.Assert(err, check.IsNil)
+	c.Assert(len(members), check.Equals, 1)
+	c.Assert(members[0].client, check.Not(check.IsNil))
+	c.Assert(members[0], check.DeepEquals, &Member{
+		ID:            "852aaa9532cb36adfb5e9fef7a4206a9",
+		EmailAddress:  "urist.mcvankab+3@freddiesjokes.com",
+		UniqueEmailID: "fab20fa03d",
+		EmailType:     HTML,
+		Status:        Subscribed,
+		MergeFields: map[string]interface{}{
+			"FNAME": "",
+			"LNAME": "",
+		},
+		Interests: map[string]bool{
+			"9143cf3bd1": false,
+			"3a2a927344": false,
+			"f9c8f5f0ff": false,
+		},
+		Stats: MemberStats{
+			AvgOpenRate:  0,
+			AvgClickRate: 0,
+		},
+		IPSignup:        "",
+		TimestampSignup: "",
+		IPOpt:           "198.2.191.34",
+		TimestampOpt:    "2015-09-16 19:24:29",
+		MemberRating:    2,
+		LastChanged:     "2015-09-16 19:24:29",
+		Language:        "",
+		Vip:             false,
+		EmailClient:     "",
+		Location: Location{
+			Latitude:    0,
+			Longitude:   0,
+			GmtOff:      0,
+			DstOff:      0,
+			CountryCode: "",
+			Timezone:    "",
+		},
+		ListID: "57afe96172",
+
+		client: s.client,
+	})
+}
+
+// --------------------------------------------------------------
 // Delete
 
 func (s *SegmentSuite) Test_Delete_Normal(c *check.C) {
@@ -322,7 +383,7 @@ func (s *SegmentSuite) Test_Update_Normal(c *check.C) {
 
 	update := &UpdateSegment{
 		Name: "Segment in list",
-		StaticSegment: []string{
+		StaticSegment: &[]string{
 			"hsims0@ihg.com",
 			"acox1@alibaba.com",
 			"jlopez2@deliciousdays.com",

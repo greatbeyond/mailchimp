@@ -76,14 +76,17 @@ type UpdateSegment CreateSegment
 // NewSegment returns a empty segment object
 // id is optional, with it you can do a bit of rudimentary chaining.
 // Example:
-//	c.NewSegment(23).Update(params)
-func (c *Client) NewSegment(id ...int) *Segment {
+//	c.NewSegment("abc23d", 23).Update(params)
+func (c *Client) NewSegment(listID string, id ...int) *Segment {
 	s := &Segment{
 		client: c,
 	}
 	if len(id) > 0 {
 		s.ID = id[0]
 	}
+
+	s.ListID = listID
+
 	return s
 }
 
@@ -185,22 +188,51 @@ func (c *Client) GetSegment(id string, listID string) (*Segment, error) {
 	return segment, nil
 }
 
-func (m *Segment) Delete() error {
+// GetMembers returns all members in this Segment.
+func (s *Segment) GetMembers(params ...Parameters) ([]*Member, error) {
+	p := requestParameters(params)
+	response, err := s.client.Get(slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID), MembersURL), p)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"list_id":    s.ListID,
+			"segment_id": s.ID,
+			"error":      err.Error(),
+		})
+	}
 
-	if m.client == nil {
+	var membersResponse *getMembers
+	err = json.Unmarshal(response, &membersResponse)
+	if err != nil {
+		Log.Error(err.Error(), caller())
+		return nil, err
+	}
+
+	// Add internal client
+	members := []*Member{}
+	for _, member := range membersResponse.Members {
+		member.client = s.client
+		members = append(members, member)
+	}
+
+	return members, nil
+}
+
+func (s *Segment) Delete() error {
+
+	if s.client == nil {
 		return ErrorNoClient
 	}
 
-	if err := hasFields(*m, "ID", "ListID"); err != nil {
+	if err := hasFields(*s, "ID", "ListID"); err != nil {
 		Log.Info(err.Error(), caller())
 		return err
 	}
 
-	err := m.client.Delete(slashJoin(ListsURL, m.ListID, SegmentsURL, strconv.Itoa(m.ID)))
+	err := s.client.Delete(slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID)))
 	if err != nil {
 		Log.WithFields(logrus.Fields{
-			"list_id":    m.ListID,
-			"segment_id": m.ID,
+			"list_id":    s.ListID,
+			"segment_id": s.ID,
 			"error":      err.Error(),
 		}).Error("response error", caller())
 		return err
@@ -210,24 +242,24 @@ func (m *Segment) Delete() error {
 }
 
 // Update returns a new Segment object with the updated values
-func (m *Segment) Update(data *UpdateSegment) (*Segment, error) {
+func (s *Segment) Update(data *UpdateSegment) (*Segment, error) {
 
-	if m.client == nil {
+	if s.client == nil {
 		return nil, ErrorNoClient
 	}
 
-	if err := hasFields(*m, "ID", "ListID"); err != nil {
+	if err := hasFields(*s, "ID", "ListID"); err != nil {
 		Log.Info(err.Error(), caller())
 		return nil, err
 	}
 
 	// If the segment was previously deleted we need to use a PATCH request,
 	// otherwhise the API will tell us it's gone.
-	response, err := m.client.Patch(slashJoin(ListsURL, m.ListID, SegmentsURL, strconv.Itoa(m.ID)), nil, data)
+	response, err := s.client.Patch(slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID)), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
-			"list_id":    m.ListID,
-			"segment_id": m.ID,
+			"list_id":    s.ListID,
+			"segment_id": s.ID,
 			"error":      err.Error(),
 		}).Error("response error", caller())
 		return nil, err
@@ -237,14 +269,14 @@ func (m *Segment) Update(data *UpdateSegment) (*Segment, error) {
 	err = json.Unmarshal(response, &segment)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
-			"list_id":    m.ListID,
-			"segment_id": m.ID,
+			"list_id":    s.ListID,
+			"segment_id": s.ID,
 			"error":      err.Error(),
 		}).Error("response error", caller())
 		return nil, err
 	}
 
-	segment.client = m.client
+	segment.client = s.client
 
 	return segment, nil
 }
