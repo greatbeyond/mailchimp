@@ -60,13 +60,13 @@ type Campaign struct {
 	Recipients CampaignRecipients `          json:"recipients"`
 
 	// The settings for your campaign, including subject, from name, reply-to address, and more.
-	Settings CampaignSettings `             json:"settings"`
+	Settings CampaignSettings `              json:"settings"`
 
 	// The settings specific to A/B test campaigns.
 	VariateSettings interface{} `            json:"variate_settings"`
 
 	// The tracking options for a campaign.
-	Tracking CampaignTracking `             json:"tracking"`
+	Tracking CampaignTracking `              json:"tracking"`
 
 	// RSS options for a campaign.
 	RSSOpts interface{} `                    json:"rss_opts"`
@@ -81,7 +81,7 @@ type Campaign struct {
 	ReportSummary interface{} `              json:"report_summary"`
 
 	// Updates on campaigns in the process of sending.
-	DeliveryStatus CampaignDeliveryStatus ` json:"delivery_status"`
+	DeliveryStatus CampaignDeliveryStatus `  json:"delivery_status"`
 
 	// Internal
 	client MailchimpClient
@@ -225,23 +225,35 @@ type CreateCampaign struct {
 // different requiered fields (checked in function)
 type UpdateCampaign CreateCampaign
 
-// CampaignRecipients defines default fields for a reciptient
+// CampaignRecipients defines default fields for a recipient
 type CampaignRecipients struct {
 	// The unique list id.
-	ListID string `              json:"list_id,omitempty"`
+	ListID string `                  json:"list_id,omitempty"`
 
 	// The name of the list.
-	ListName string `            json:"list_name,omitempty"`
+	ListName string `                json:"list_name,omitempty"`
 
 	// A string marked-up with HTML explaining the
 	// segment used for the campaign in plain English.
-	SegmentText string `         json:"segment_text,omitempty"`
+	SegmentText string `             json:"segment_text,omitempty"`
 
 	// Count of the recipients on the associated list. Formatted as an integer.
-	RecipientCount int `         json:"recipient_count,omitempty"`
+	RecipientCount int `             json:"recipient_count,omitempty"`
 
 	// An object representing all segmentation options.
-	SegmentOpts interface{} `    json:"segment_opts,omitempty"`
+	SegmentOpts CampaignSegmentOpts `json:"segment_opts,omitempty"`
+}
+
+// CampaignSegmentOpts defines fields for campaign segment options
+type CampaignSegmentOpts struct {
+	// The id for an existing saved segment.
+	SavedSegmentID int `      json:"saved_segment_id,omitempty"`
+
+	// Segment match type.
+	Match string `            json:"match,omitempty"`
+
+	// No Description
+	Conditions []interface{} `json:"conditions,omitempty"`
 }
 
 // CampaignCreateSettings Required fields for campaing creation settings
