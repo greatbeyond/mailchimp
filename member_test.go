@@ -37,7 +37,8 @@ func (s *MemberSuite) SetUpTest(c *check.C) {
 func (s *MemberSuite) TearDownTest(c *check.C) {}
 
 func (s *MemberSuite) Test_NewMember(c *check.C) {
-	mem := s.client.NewMember()
+	mem := s.client.NewMember("abc23d")
+	c.Assert(mem.ListID, check.Equals, "abc23d")
 	c.Assert(mem.client, check.Not(check.IsNil))
 }
 

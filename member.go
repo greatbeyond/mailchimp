@@ -141,13 +141,16 @@ type Location struct {
 // id is optional, with it you can do a bit of rudimentary chaining.
 // Example:
 //	c.NewMember(23).Update(params)
-func (c *Client) NewMember(id ...string) *Member {
+func (c *Client) NewMember(listID string, id ...string) *Member {
 	s := &Member{
 		client: c,
 	}
 	if len(id) > 0 {
 		s.ID = id[0]
 	}
+
+	s.ListID = listID
+
 	return s
 }
 
