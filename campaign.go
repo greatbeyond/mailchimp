@@ -445,9 +445,30 @@ func (c *Campaign) Resume() error {
 	return nil
 }
 
+// CampaignScheduleData contains data required by Schedule()
+type CampaignScheduleData struct {
+	// The date and time in UTC (2017-02-04T19:13:00+00:00) to schedule the campaign for delivery.
+	// Campaigns may only be scheduled to send on the quarter-hour (:00, :15, :30, :45).
+	ScheduleTime string `json:"schedule_time"`
+	// Choose whether the campaign should use Timewarp when sending. Campaigns
+	// scheduled with Timewarp are localized based on the recipients’ time zones.
+	// For example, a Timewarp campaign with a schedule_time of 13:00 will be sent
+	// to each recipient at 1:00pm in their local time. Cannot be set to true
+	// for campaigns using Batch Delivery.
+	Timewarp bool `json:"timewarp,omitempty"`
+	// Choose whether the campaign should use Batch Delivery. Cannot be set to
+	// true for campaigns using Timewarp.
+	BatchDelivery struct {
+		// The delay, in minutes, between batches.
+		BatchDelay int `json:"batch_delay"`
+		// The number of batches for the campaign send.
+		BatchCount int `json:"batch_count"`
+	} `json:"batch_delivery,omitempty"`
+}
+
 // Schedule a campaign
-func (c *Campaign) Schedule() error {
-	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionSchedule), nil, nil)
+func (c *Campaign) Schedule(data *CampaignScheduleData) error {
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionSchedule), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -471,9 +492,17 @@ func (c *Campaign) Send() error {
 	return nil
 }
 
+// CampaignTestData contains values requiered by Test()
+type CampaignTestData struct {
+	// An array of email addresses to send the test email to.
+	TestEmails []string `json:"test_emails"`
+	// Choose the type of test email to send. Possible values: html, plaintext
+	SendType string `json:"send_type"`
+}
+
 // Test a campaign
-func (c *Campaign) Test() error {
-	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionTest), nil, nil)
+func (c *Campaign) Test(data *CampaignTestData) error {
+	_, err := c.client.Post(slashJoin(CampaignsURL, c.ID, CampaignActionTest), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
