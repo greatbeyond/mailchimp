@@ -315,6 +315,12 @@ func (c *Client) NewCampaign(id ...string) *Campaign {
 // CreateCampaign creates a new campaign via mailchimp api v3
 func (c *Client) CreateCampaign(data *CreateCampaign) (*Campaign, error) {
 	response, err := c.Post(CampaignsURL, nil, data)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("response error", caller())
+		return nil, err
+	}
 
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
@@ -368,6 +374,12 @@ func (c *Client) GetCampaigns() ([]*Campaign, error) {
 // GetCampaign retrives a single campaign by id
 func (c *Client) GetCampaign(id string) (*Campaign, error) {
 	response, err := c.Get(slashJoin(CampaignsURL, id), nil)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("response error", caller())
+		return nil, err
+	}
 
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
@@ -387,6 +399,12 @@ func (c *Client) GetCampaign(id string) (*Campaign, error) {
 // Update sets new values on a campaign via mailchimp api
 func (c *Campaign) Update(data *UpdateCampaign) (*Campaign, error) {
 	response, err := c.client.Patch(slashJoin(CampaignsURL, c.ID), nil, data)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("response error", caller())
+		return nil, err
+	}
 
 	var campaign *Campaign
 	err = json.Unmarshal(response, &campaign)
@@ -607,6 +625,12 @@ type CampaignContentEdit struct {
 func (c *Campaign) GetContent() (interface{}, error) {
 
 	response, err := c.client.Get(slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("response error", caller())
+		return nil, err
+	}
 
 	var content *CampaignContent
 	err = json.Unmarshal(response, &content)
@@ -624,6 +648,12 @@ func (c *Campaign) GetContent() (interface{}, error) {
 // SetContent updates the content for the campaign
 func (c *Campaign) SetContent(content *CampaignContentEdit) (*CampaignContent, error) {
 	response, err := c.client.Put(slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil, content)
+	if err != nil {
+		Log.WithFields(logrus.Fields{
+			"error": err.Error(),
+		}).Error("response error", caller())
+		return nil, err
+	}
 
 	var responseContent *CampaignContent
 	err = json.Unmarshal(response, &responseContent)
