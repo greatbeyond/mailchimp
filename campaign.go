@@ -85,11 +85,11 @@ type Campaign struct {
 	DeliveryStatus CampaignDeliveryStatus `  json:"delivery_status"`
 
 	// Internal
-	client MailchimpClient
+	Client MailchimpClient `json:"-"`
 }
 
 // SetClient fulfills ClientType
-func (c *Campaign) SetClient(m MailchimpClient) { c.client = m }
+func (c *Campaign) SetClient(m MailchimpClient) { c.Client = m }
 
 // CampaignSettings defines settings for a campaign
 type CampaignSettings struct {
@@ -305,7 +305,7 @@ type CampaignCreateSettings struct {
 //	c.NewCampaign(23).Update(params)
 func (c *Client) NewCampaign(ctx context.Context, id ...string) *Campaign {
 	s := &Campaign{
-		client: c,
+		Client: c,
 	}
 	if len(id) > 0 {
 		s.ID = id[0]
@@ -332,7 +332,7 @@ func (c *Client) CreateCampaign(ctx context.Context, data *CreateCampaign) (*Cam
 		return nil, err
 	}
 
-	campaign.client = c
+	campaign.Client = c
 
 	return campaign, nil
 }
@@ -365,7 +365,7 @@ func (c *Client) GetCampaigns(ctx context.Context) ([]*Campaign, error) {
 	// Add internal client
 	campaigns := []*Campaign{}
 	for _, campaign := range campaignsResponse.Campaigns {
-		campaign.client = c
+		campaign.Client = c
 		campaigns = append(campaigns, campaign)
 	}
 
@@ -392,14 +392,14 @@ func (c *Client) GetCampaign(ctx context.Context, id string) (*Campaign, error) 
 		return nil, err
 	}
 
-	campaign.client = c
+	campaign.Client = c
 
 	return campaign, nil
 }
 
 // Update sets new values on a campaign via mailchimp api
 func (c *Campaign) Update(ctx context.Context, data *UpdateCampaign) (*Campaign, error) {
-	response, err := c.client.Patch(ctx, slashJoin(CampaignsURL, c.ID), nil, data)
+	response, err := c.Client.Patch(ctx, slashJoin(CampaignsURL, c.ID), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -417,7 +417,7 @@ func (c *Campaign) Update(ctx context.Context, data *UpdateCampaign) (*Campaign,
 		return nil, err
 	}
 
-	campaign.client = c.client
+	campaign.Client = c.Client
 
 	return campaign, nil
 }
@@ -427,7 +427,7 @@ func (c *Campaign) Update(ctx context.Context, data *UpdateCampaign) (*Campaign,
 
 // Cancel a campaign
 func (c *Campaign) Cancel(ctx context.Context) error {
-	_, err := c.client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionCancel), nil, nil)
+	_, err := c.Client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionCancel), nil, nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -440,7 +440,7 @@ func (c *Campaign) Cancel(ctx context.Context) error {
 
 // Pause a campaign
 func (c *Campaign) Pause(ctx context.Context) error {
-	_, err := c.client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionPause), nil, nil)
+	_, err := c.Client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionPause), nil, nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -453,7 +453,7 @@ func (c *Campaign) Pause(ctx context.Context) error {
 
 // Resume a campaign
 func (c *Campaign) Resume(ctx context.Context) error {
-	_, err := c.client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionResume), nil, nil)
+	_, err := c.Client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionResume), nil, nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -487,7 +487,7 @@ type CampaignScheduleData struct {
 
 // Schedule a campaign
 func (c *Campaign) Schedule(ctx context.Context, data *CampaignScheduleData) error {
-	_, err := c.client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionSchedule), nil, data)
+	_, err := c.Client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionSchedule), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -500,7 +500,7 @@ func (c *Campaign) Schedule(ctx context.Context, data *CampaignScheduleData) err
 
 // Send a campaign
 func (c *Campaign) Send(ctx context.Context) error {
-	_, err := c.client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionSend), nil, nil)
+	_, err := c.Client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionSend), nil, nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -521,7 +521,7 @@ type CampaignTestData struct {
 
 // Test a campaign
 func (c *Campaign) Test(ctx context.Context, data *CampaignTestData) error {
-	_, err := c.client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionTest), nil, data)
+	_, err := c.Client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionTest), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -534,7 +534,7 @@ func (c *Campaign) Test(ctx context.Context, data *CampaignTestData) error {
 
 // Unschedule a campaign
 func (c *Campaign) Unschedule(ctx context.Context) error {
-	_, err := c.client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionUnschedule), nil, nil)
+	_, err := c.Client.Post(ctx, slashJoin(CampaignsURL, c.ID, CampaignActionUnschedule), nil, nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -547,7 +547,7 @@ func (c *Campaign) Unschedule(ctx context.Context) error {
 
 // Delete removes a campaign
 func (c *Campaign) Delete(ctx context.Context) error {
-	err := c.client.Delete(ctx, slashJoin(CampaignsURL, c.ID))
+	err := c.Client.Delete(ctx, slashJoin(CampaignsURL, c.ID))
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"ID":    c.ID,
@@ -624,7 +624,7 @@ type CampaignContentEdit struct {
 
 // GetContent retrives the content for a campaign
 func (c *Campaign) GetContent(ctx context.Context) (interface{}, error) {
-	response, err := c.client.Get(ctx, slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil)
+	response, err := c.Client.Get(ctx, slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -647,7 +647,7 @@ func (c *Campaign) GetContent(ctx context.Context) (interface{}, error) {
 
 // SetContent updates the content for the campaign
 func (c *Campaign) SetContent(ctx context.Context, content *CampaignContentEdit) (*CampaignContent, error) {
-	response, err := c.client.Put(ctx, slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil, content)
+	response, err := c.Client.Put(ctx, slashJoin(CampaignsURL, c.ID, CampaignContentURL), nil, content)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),

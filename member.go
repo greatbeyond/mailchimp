@@ -76,11 +76,11 @@ type Member struct {
 	ListID string `                     json:"list_id,omitempty"`
 
 	// Internal
-	client MailchimpClient
+	Client MailchimpClient `json:"-"`
 }
 
 // SetClient fulfills ClientType
-func (m *Member) SetClient(c MailchimpClient) { m.client = c }
+func (m *Member) SetClient(c MailchimpClient) { m.Client = c }
 
 // CreateMember contains fields to create or update memebrs
 type CreateMember struct {
@@ -144,7 +144,7 @@ type Location struct {
 //	c.NewMember(23).Update(params)
 func (c *Client) NewMember(listID string, id ...string) *Member {
 	s := &Member{
-		client: c,
+		Client: c,
 	}
 	if len(id) > 0 {
 		s.ID = id[0]
@@ -185,7 +185,7 @@ func (c *Client) CreateMember(ctx context.Context, data *CreateMember, listID st
 		return nil, err
 	}
 
-	member.client = c
+	member.Client = c
 
 	return member, nil
 }
@@ -217,7 +217,7 @@ func (c *Client) GetMembers(ctx context.Context, listID string, params ...Parame
 	// Add internal client
 	members := []*Member{}
 	for _, member := range membersResponse.Members {
-		member.client = c
+		member.Client = c
 		members = append(members, member)
 	}
 
@@ -247,20 +247,20 @@ func (c *Client) GetMember(ctx context.Context, id string, listID string) (*Memb
 		return nil, err
 	}
 
-	member.client = c
+	member.Client = c
 
 	return member, nil
 }
 
 // Update Returns a new Member object with the updated values
 func (m *Member) Update(ctx context.Context, data *UpdateMember) (*Member, error) {
-	if m.client == nil {
+	if m.Client == nil {
 		return nil, ErrorNoClient
 	}
 
 	// If the member was previously deleted we need to use a PUT request,
 	// otherwhise the API will tell us it's gone.
-	response, err := m.client.Put(ctx, slashJoin(ListsURL, m.ListID, MembersURL, m.ID), nil, data)
+	response, err := m.Client.Put(ctx, slashJoin(ListsURL, m.ListID, MembersURL, m.ID), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
@@ -281,16 +281,16 @@ func (m *Member) Update(ctx context.Context, data *UpdateMember) (*Member, error
 		return nil, err
 	}
 
-	member.client = m.client
+	member.Client = m.Client
 
 	return member, nil
 }
 
 func (m *Member) Delete(ctx context.Context) error {
-	if m.client == nil {
+	if m.Client == nil {
 		return ErrorNoClient
 	}
-	err := m.client.Delete(ctx, slashJoin(ListsURL, m.ListID, MembersURL, m.ID))
+	err := m.Client.Delete(ctx, slashJoin(ListsURL, m.ListID, MembersURL, m.ID))
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,

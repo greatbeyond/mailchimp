@@ -41,11 +41,11 @@ type Webhook struct {
 	Links json.RawMessage `json:"_links"`
 
 	// Internal
-	client MailchimpClient
+	Client MailchimpClient `json:"-"`
 }
 
 // SetClient fulfills ClientType
-func (w *Webhook) SetClient(c MailchimpClient) { w.client = c }
+func (w *Webhook) SetClient(c MailchimpClient) { w.Client = c }
 
 // WebhookEvents defines all valid fields for webhook events.
 type WebhookEvents struct {
@@ -108,7 +108,7 @@ func (c *Client) CreateWebhook(ctx context.Context, request *CreateWebhook) (*We
 	}
 
 	// Add internal client
-	webhook.client = c
+	webhook.Client = c
 
 	return webhook, nil
 }
@@ -140,7 +140,7 @@ func (c *Client) GetWebhooks(ctx context.Context, listID string) ([]*Webhook, er
 	// Add internal client
 	webhooks := []*Webhook{}
 	for _, webhook := range webhooksResponse.Webhooks {
-		webhook.client = c
+		webhook.Client = c
 		webhooks = append(webhooks, webhook)
 	}
 
@@ -163,7 +163,7 @@ func (c *Client) GetWebhook(ctx context.Context, listID string, webhookID string
 	}
 
 	// Add internal client
-	webhook.client = c
+	webhook.Client = c
 
 	return webhook, nil
 }
@@ -171,10 +171,10 @@ func (c *Client) GetWebhook(ctx context.Context, listID string, webhookID string
 // DeleteWebhook removes a webhook from mailchimp.
 // Returns error on failure
 func (w *Webhook) DeleteWebhook(ctx context.Context) error {
-	if w.client == nil {
+	if w.Client == nil {
 		return ErrorNoClient
 	}
-	return w.client.Delete(ctx, slashJoin(ListsURL, w.ListID, WebhooksURL, w.ID))
+	return w.Client.Delete(ctx, slashJoin(ListsURL, w.ListID, WebhooksURL, w.ID))
 }
 
 // ------------------------------------------------------------------------------
