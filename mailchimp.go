@@ -7,11 +7,14 @@ package mailchimp
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
+
+	"errors"
 
 	"github.com/Sirupsen/logrus"
 )
@@ -26,10 +29,7 @@ var Log = logrus.New()
 // Client handles communication with mailchimp servers
 // it fulfills the MailchimpClient interface
 type Client struct {
-	token      string
-	APIURL     string
 	HTTPClient *http.Client
-	Batch      *BatchQueue
 	debug      bool
 
 	log *logrus.Logger
@@ -45,31 +45,8 @@ type ClientType interface {
 var _requestCount int
 
 // NewClient returns a new Mailchimp client with your token
-func NewClient(token string) *Client {
-
-	split := strings.Split(token, "-")
-	if len(split) != 2 {
-		Log.WithFields(logrus.Fields{
-			"token": token,
-		}).Debug("malformed token", caller())
-		return nil
-	}
-	apiurl := "https://" + split[1] + ".api.mailchimp.com/3.0/"
-
-	httpclient := &http.Client{}
+func NewClient() *Client {
 	return &Client{
-		token:      token,
-		APIURL:     apiurl,
-		HTTPClient: httpclient,
-	}
-}
-
-// Clone returns a client with the same preferences.
-// http client (and optional batch operation) is ignored
-func (c *Client) Clone() *Client {
-	return &Client{
-		token:      c.token,
-		APIURL:     c.APIURL,
 		HTTPClient: &http.Client{},
 	}
 }
@@ -82,9 +59,8 @@ type Parameters map[string]interface{}
 
 // Get prepares a GET request to a resource with parameters.
 // It returns the body as []byte
-func (c *Client) Get(resource string, parameters map[string]interface{}) ([]byte, error) {
-
-	req, err := http.NewRequest("GET", singleJoiningSlash(c.APIURL, resource), nil)
+func (c *Client) Get(ctx context.Context, resource string, parameters map[string]interface{}) ([]byte, error) {
+	req, err := http.NewRequest("GET", singleJoiningSlash(c.apiURI(ctx), resource), nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -95,13 +71,12 @@ func (c *Client) Get(resource string, parameters map[string]interface{}) ([]byte
 	// add parameters
 	c.addParameters(req, parameters)
 
-	return c.Do(req)
+	return c.Do(req.WithContext(ctx))
 }
 
 // Post prepares a POST request to a resource with parameters and JSON body marshalled from
 // the data object provided. It returns the body as []byte
-func (c *Client) Post(resource string, parameters map[string]interface{}, data interface{}) ([]byte, error) {
-
+func (c *Client) Post(ctx context.Context, resource string, parameters map[string]interface{}, data interface{}) ([]byte, error) {
 	js, err := json.Marshal(data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
@@ -111,7 +86,7 @@ func (c *Client) Post(resource string, parameters map[string]interface{}, data i
 	}
 
 	body := bytes.NewBuffer(js)
-	req, err := http.NewRequest("POST", singleJoiningSlash(c.APIURL, resource), body)
+	req, err := http.NewRequest("POST", singleJoiningSlash(c.apiURI(ctx), resource), body)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -122,13 +97,12 @@ func (c *Client) Post(resource string, parameters map[string]interface{}, data i
 	// add parameters
 	c.addParameters(req, parameters)
 
-	return c.Do(req)
+	return c.Do(req.WithContext(ctx))
 }
 
 // Patch prepares a PATCH request to a resource with parameters and JSON body marshalled from
 // the data object provided. It returns the body as []byte
-func (c *Client) Patch(resource string, parameters map[string]interface{}, data interface{}) ([]byte, error) {
-
+func (c *Client) Patch(ctx context.Context, resource string, parameters map[string]interface{}, data interface{}) ([]byte, error) {
 	js, err := json.Marshal(data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
@@ -138,7 +112,7 @@ func (c *Client) Patch(resource string, parameters map[string]interface{}, data 
 	}
 
 	body := bytes.NewBuffer(js)
-	req, err := http.NewRequest("PATCH", singleJoiningSlash(c.APIURL, resource), body)
+	req, err := http.NewRequest("PATCH", singleJoiningSlash(c.apiURI(ctx), resource), body)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -149,14 +123,13 @@ func (c *Client) Patch(resource string, parameters map[string]interface{}, data 
 	// add parameters
 	c.addParameters(req, parameters)
 
-	return c.Do(req)
+	return c.Do(req.WithContext(ctx))
 }
 
 // Put prepares a PUT request to a resource with parameters and JSON body marshalled from
 // the data object provided. It returns the body as []byte
 // Compared to PATCH, PUT will succeed even when the object has previously been deleted.
-func (c *Client) Put(resource string, parameters map[string]interface{}, data interface{}) ([]byte, error) {
-
+func (c *Client) Put(ctx context.Context, resource string, parameters map[string]interface{}, data interface{}) ([]byte, error) {
 	js, err := json.Marshal(data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
@@ -166,7 +139,7 @@ func (c *Client) Put(resource string, parameters map[string]interface{}, data in
 	}
 
 	body := bytes.NewBuffer(js)
-	req, err := http.NewRequest("PUT", singleJoiningSlash(c.APIURL, resource), body)
+	req, err := http.NewRequest("PUT", singleJoiningSlash(c.apiURI(ctx), resource), body)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
@@ -177,27 +150,25 @@ func (c *Client) Put(resource string, parameters map[string]interface{}, data in
 	// add parameters
 	c.addParameters(req, parameters)
 
-	return c.Do(req)
+	return c.Do(req.WithContext(ctx))
 }
 
 // Delete prepares a DELETE request to a resource
-func (c *Client) Delete(resource string) error {
-
-	req, err := http.NewRequest("DELETE", singleJoiningSlash(c.APIURL, resource), nil)
+func (c *Client) Delete(ctx context.Context, resource string) error {
+	req, err := http.NewRequest("DELETE", singleJoiningSlash(c.apiURI(ctx), resource), nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"error": err.Error(),
 		}).Error("malformed request", caller())
 		return err
 	}
-	_, err = c.Do(req)
+	_, err = c.Do(req.WithContext(ctx))
 	return err
 }
 
 // Do adds auth token and performs a request to the api. It returns the body as []byte or an error
 // that is castable to a mailchimp.Error type for more information about the request.
 func (c *Client) Do(request *http.Request) ([]byte, error) {
-
 	if request == nil {
 		return nil, fmt.Errorf("can't send nil request")
 	}
@@ -213,14 +184,11 @@ func (c *Client) Do(request *http.Request) ([]byte, error) {
 	// dump, _ := httputil.DumpRequestOut(request, request.Method != "GET")
 	// Log.Debug(string(dump))
 
-	// Do we have a batch operation running currently?
-	if c.Batch != nil {
-		return c.Batch.Do(request)
+	token, ok := TokenFromContext(request.Context())
+	if !ok || token == "" {
+		return nil, errors.New("no token on request")
 	}
-
-	if c.token != "" {
-		request.SetBasicAuth("OAuthToken", c.token)
-	}
+	request.SetBasicAuth("OAuthToken", token)
 
 	resp, err := c.HTTPClient.Do(request)
 	if err != nil {
@@ -294,4 +262,28 @@ func (c *Client) handleError(response *http.Response) Error {
 	}
 
 	return e
+}
+
+func (c *Client) apiURI(ctx context.Context) string {
+	// Has the host app set a url directly for us?
+	url, ok := URLFromContext(ctx)
+	if ok && url != "" {
+		return url
+	}
+
+	// calculate the default api url from the token suffix
+	token, ok := TokenFromContext(ctx)
+	if !ok {
+		Log.Debug("no token on context", caller())
+		return ""
+	}
+
+	split := strings.Split(token, "-")
+	if len(split) != 2 {
+		Log.WithFields(logrus.Fields{
+			"token": token,
+		}).Debug("malformed token", caller())
+		return ""
+	}
+	return "https://" + split[1] + ".api.mailchimp.com/3.0/"
 }
