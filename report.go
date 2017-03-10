@@ -6,6 +6,7 @@
 package mailchimp
 
 import (
+	"context"
 	"encoding/json"
 
 	"github.com/Sirupsen/logrus"
@@ -42,9 +43,9 @@ type GetSentTo struct {
 // GetSentTo returns sent status for each member in a sent campaign.
 // Optional params: fields, exclude_fields, count, offset.
 // See: https://developer.mailchimp.com/documentation/mailchimp/reference/reports/sent-to/
-func (c *Client) GetSentTo(campaignID string, params ...Parameters) (*GetSentTo, error) {
+func (c *Client) GetSentTo(ctx context.Context, campaignID string, params ...Parameters) (*GetSentTo, error) {
 	p := requestParameters(params)
-	response, err := c.Get(slashJoin(ReportURL, campaignID, SentToURL), p)
+	response, err := c.Get(ctx, slashJoin(ReportURL, campaignID, SentToURL), p)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"campaign_id": campaignID,

@@ -6,8 +6,8 @@
 package mailchimp
 
 import (
+	"context"
 	"net/http"
-	"strings"
 
 	t "github.com/greatbeyond/mailchimp/testing"
 
@@ -19,6 +19,7 @@ var _ = check.Suite(&MergeFieldSuite{})
 type MergeFieldSuite struct {
 	client *Client
 	server *t.MockServer
+	ctx    context.Context
 }
 
 func (s *MergeFieldSuite) SetUpSuite(c *check.C) {
@@ -29,16 +30,19 @@ func (s *MergeFieldSuite) SetUpTest(c *check.C) {
 	s.server = t.NewMockServer()
 	s.server.SetChecker(c)
 
-	s.client = NewClient("b12824bd84759ef84abc67fd789e7570-us13")
+	s.client = NewClient()
 	s.client.HTTPClient = s.server.HTTPClient
-	s.client.APIURL = strings.Replace(s.client.APIURL, "https://", "http://", 1)
+
+	s.ctx = NewContextWithToken(context.Background(), "b12824bd84759ef84abc67fd789e7570-us13")
+	// We need http to use the mock server
+	s.ctx = NewContextWithURL(s.ctx, "http://us13.api.mailchimp.com/3.0/")
 }
 
 func (s *MergeFieldSuite) TearDownTest(c *check.C) {}
 
 func (s *MergeFieldSuite) Test_NewMergeField(c *check.C) {
 	seg := s.client.NewMergeField()
-	c.Assert(seg.client, check.Not(check.IsNil))
+	c.Assert(seg.Client, check.Not(check.IsNil))
 }
 
 // --------------------------------------------------------------
@@ -71,7 +75,7 @@ func (s *MergeFieldSuite) Test_CreateMergeField_Normal(c *check.C) {
 		},
 	})
 
-	mergefield, err := s.client.CreateMergeField(create, "57afe96172")
+	mergefield, err := s.client.CreateMergeField(s.ctx, create, "57afe96172")
 	c.Assert(err, check.IsNil)
 	c.Assert(mergefield, check.DeepEquals, &MergeField{
 		MergeID:      3,
@@ -87,7 +91,7 @@ func (s *MergeFieldSuite) Test_CreateMergeField_Normal(c *check.C) {
 		},
 		HelpText: "",
 		ListID:   "57afe96172",
-		client:   s.client,
+		Client:   s.client,
 	})
 }
 
@@ -98,7 +102,7 @@ func (s *MergeFieldSuite) Test_CreateMergeField_MissingName(c *check.C) {
 		// Name:         "FAVORITEJOKE",
 		Type: MergeFieldTypeText,
 	}
-	_, err := s.client.CreateMergeField(create, "57afe96172")
+	_, err := s.client.CreateMergeField(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "missing field: Name")
 }
 
@@ -109,7 +113,7 @@ func (s *MergeFieldSuite) Test_CreateMergeField_MissingType(c *check.C) {
 		Name:    "FAVORITEJOKE",
 		// Type: MergeFieldTypeText,
 	}
-	_, err := s.client.CreateMergeField(create, "57afe96172")
+	_, err := s.client.CreateMergeField(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "missing field: Type")
 }
 
@@ -120,13 +124,13 @@ func (s *MergeFieldSuite) Test_CreateMergeField_LongTag(c *check.C) {
 		Name:    "FAVORITEJOKE",
 		Type:    MergeFieldTypeText,
 	}
-	_, err := s.client.CreateMergeField(create, "57afe96172")
+	_, err := s.client.CreateMergeField(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "tag length over limit \\(10\\)")
 }
 
 func (s *MergeFieldSuite) Test_CreateMergeField_MissingListID(c *check.C) {
 	create := &CreateMergeField{}
-	_, err := s.client.CreateMergeField(create, "")
+	_, err := s.client.CreateMergeField(s.ctx, create, "")
 	c.Assert(err, check.ErrorMatches, "missing argument: listID")
 }
 
@@ -142,7 +146,7 @@ func (s *MergeFieldSuite) Test_CreateMergeField_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	mergefield, err := s.client.CreateMergeField(create, "57afe96172")
+	mergefield, err := s.client.CreateMergeField(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(mergefield, check.IsNil)
 }
@@ -159,7 +163,7 @@ func (s *MergeFieldSuite) Test_CreateMergeField_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	mergefield, err := s.client.CreateMergeField(create, "57afe96172")
+	mergefield, err := s.client.CreateMergeField(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(mergefield, check.IsNil)
 }
@@ -178,10 +182,10 @@ func (s *MergeFieldSuite) Test_GetMergeFields_Normal(c *check.C) {
 		},
 	})
 
-	mergefield, err := s.client.GetMergeFields("57afe96172")
+	mergefield, err := s.client.GetMergeFields(s.ctx, "57afe96172")
 	c.Assert(err, check.IsNil)
 	c.Assert(len(mergefield), check.Equals, 1)
-	c.Assert(mergefield[0].client, check.Not(check.IsNil))
+	c.Assert(mergefield[0].Client, check.Not(check.IsNil))
 	c.Assert(mergefield[0], check.DeepEquals, &MergeField{
 		MergeID:      1,
 		Tag:          "FNAME",
@@ -196,7 +200,7 @@ func (s *MergeFieldSuite) Test_GetMergeFields_Normal(c *check.C) {
 		},
 		HelpText: "",
 		ListID:   "57afe96172",
-		client:   s.client,
+		Client:   s.client,
 	})
 
 }
@@ -208,7 +212,7 @@ func (s *MergeFieldSuite) Test_GetMergeFields_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	MergeField, err := s.client.GetMergeFields("57afe96172")
+	MergeField, err := s.client.GetMergeFields(s.ctx, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(MergeField, check.IsNil)
 }
@@ -220,7 +224,7 @@ func (s *MergeFieldSuite) Test_GetMergeFields_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	mergefield, err := s.client.GetMergeFields("57afe96172")
+	mergefield, err := s.client.GetMergeFields(s.ctx, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(mergefield, check.IsNil)
 }
@@ -239,9 +243,9 @@ func (s *MergeFieldSuite) Test_GetMergeField_Normal(c *check.C) {
 		},
 	})
 
-	mergefield, err := s.client.GetMergeField(3, "57afe96172")
+	mergefield, err := s.client.GetMergeField(s.ctx, 3, "57afe96172")
 	c.Assert(err, check.IsNil)
-	c.Assert(mergefield.client, check.Not(check.IsNil))
+	c.Assert(mergefield.Client, check.Not(check.IsNil))
 	c.Assert(mergefield, check.DeepEquals, &MergeField{
 		MergeID:      3,
 		Tag:          "MMERGE3",
@@ -256,7 +260,7 @@ func (s *MergeFieldSuite) Test_GetMergeField_Normal(c *check.C) {
 		},
 		HelpText: "",
 		ListID:   "57afe96172",
-		client:   s.client,
+		Client:   s.client,
 	})
 
 }
@@ -268,7 +272,7 @@ func (s *MergeFieldSuite) Test_GetMergeField_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	mergefield, err := s.client.GetMergeField(0, "57afe96172")
+	mergefield, err := s.client.GetMergeField(s.ctx, 0, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(mergefield, check.IsNil)
 }
@@ -280,7 +284,7 @@ func (s *MergeFieldSuite) Test_GetMergeField_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	mergefield, err := s.client.GetMergeField(0, "57afe96172")
+	mergefield, err := s.client.GetMergeField(s.ctx, 0, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(mergefield, check.IsNil)
 }
@@ -293,7 +297,7 @@ func (s *MergeFieldSuite) Test_Delete_Normal(c *check.C) {
 	mergefield := &MergeField{
 		MergeID: 3,
 		ListID:  "57afe96172",
-		client:  s.client,
+		Client:  s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -305,7 +309,7 @@ func (s *MergeFieldSuite) Test_Delete_Normal(c *check.C) {
 		},
 	})
 
-	err := mergefield.Delete()
+	err := mergefield.Delete(s.ctx)
 	c.Assert(err, check.IsNil)
 
 }
@@ -315,7 +319,7 @@ func (s *MergeFieldSuite) Test_Delete_NoClient(c *check.C) {
 		MergeID: 49377,
 		ListID:  "57afe96172",
 	}
-	err := mergefield.Delete()
+	err := mergefield.Delete(s.ctx)
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
@@ -323,7 +327,7 @@ func (s *MergeFieldSuite) Test_Delete_UnknownResponse(c *check.C) {
 	mergefield := &MergeField{
 		MergeID: 49377,
 		ListID:  "57afe96172",
-		client:  s.client,
+		Client:  s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -332,7 +336,7 @@ func (s *MergeFieldSuite) Test_Delete_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	err := mergefield.Delete()
+	err := mergefield.Delete(s.ctx)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 
 }
@@ -345,7 +349,7 @@ func (s *MergeFieldSuite) Test_Update_Normal(c *check.C) {
 	mergefield := &MergeField{
 		MergeID: 49377,
 		ListID:  "57afe96172",
-		client:  s.client,
+		Client:  s.client,
 	}
 
 	update := &UpdateMergeField{
@@ -364,7 +368,7 @@ func (s *MergeFieldSuite) Test_Update_Normal(c *check.C) {
 		},
 	})
 
-	upd, err := mergefield.Update(update)
+	upd, err := mergefield.Update(s.ctx, update)
 	c.Assert(err, check.IsNil)
 	c.Assert(upd, check.DeepEquals, &MergeField{
 		MergeID:      3,
@@ -380,7 +384,7 @@ func (s *MergeFieldSuite) Test_Update_Normal(c *check.C) {
 		},
 		HelpText: "",
 		ListID:   "57afe96172",
-		client:   s.client,
+		Client:   s.client,
 	})
 }
 
@@ -390,7 +394,7 @@ func (s *MergeFieldSuite) Test_Update_Missing_Client(c *check.C) {
 		ListID:  "57afe96172",
 	}
 	update := &UpdateMergeField{}
-	_, err := mergefield.Update(update)
+	_, err := mergefield.Update(s.ctx, update)
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
@@ -401,7 +405,7 @@ func (s *MergeFieldSuite) Test_Update_BadResponse(c *check.C) {
 	mergefield := &MergeField{
 		MergeID: 49377,
 		ListID:  "57afe96172",
-		client:  s.client,
+		Client:  s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -410,7 +414,7 @@ func (s *MergeFieldSuite) Test_Update_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	upd, err := mergefield.Update(updSegm)
+	upd, err := mergefield.Update(s.ctx, updSegm)
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(upd, check.IsNil)
 }
@@ -422,7 +426,7 @@ func (s *MergeFieldSuite) Test_Update_UnknownResponse(c *check.C) {
 	mergefield := &MergeField{
 		MergeID: 49377,
 		ListID:  "57afe96172",
-		client:  s.client,
+		Client:  s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -431,7 +435,7 @@ func (s *MergeFieldSuite) Test_Update_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	upd, err := mergefield.Update(updSegm)
+	upd, err := mergefield.Update(s.ctx, updSegm)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(upd, check.IsNil)
 }

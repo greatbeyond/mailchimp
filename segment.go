@@ -6,6 +6,7 @@
 package mailchimp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -45,11 +46,11 @@ type Segment struct {
 	ListID string `json:"list_id,omitempty"`
 
 	// Internal
-	client MailchimpClient
+	Client MailchimpClient `json:"-"`
 }
 
 // SetClient fulfills ClientType
-func (s *Segment) SetClient(c MailchimpClient) { s.client = c }
+func (s *Segment) SetClient(c MailchimpClient) { s.Client = c }
 
 // CreateSegment sends a request to create a segment
 type CreateSegment struct {
@@ -79,7 +80,7 @@ type UpdateSegment CreateSegment
 //	c.NewSegment("abc23d", 23).Update(params)
 func (c *Client) NewSegment(listID string, id ...int) *Segment {
 	s := &Segment{
-		client: c,
+		Client: c,
 	}
 	if len(id) > 0 {
 		s.ID = id[0]
@@ -91,7 +92,7 @@ func (c *Client) NewSegment(listID string, id ...int) *Segment {
 }
 
 // CreateSegment Creates a segment object and inserts it
-func (c *Client) CreateSegment(data *CreateSegment, listID string) (*Segment, error) {
+func (c *Client) CreateSegment(ctx context.Context, data *CreateSegment, listID string) (*Segment, error) {
 
 	if listID == "" {
 		return nil, fmt.Errorf("missing argument: listID")
@@ -102,7 +103,7 @@ func (c *Client) CreateSegment(data *CreateSegment, listID string) (*Segment, er
 		return nil, err
 	}
 
-	response, err := c.Post(slashJoin(ListsURL, listID, SegmentsURL), nil, data)
+	response, err := c.Post(ctx, slashJoin(ListsURL, listID, SegmentsURL), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"list_id": listID,
@@ -121,7 +122,7 @@ func (c *Client) CreateSegment(data *CreateSegment, listID string) (*Segment, er
 		return nil, err
 	}
 
-	segment.client = c
+	segment.Client = c
 
 	return segment, nil
 }
@@ -132,10 +133,10 @@ type getSegments struct {
 	TotalItems int        `json:"total_items"`
 }
 
-func (c *Client) GetSegments(listID string, params ...Parameters) ([]*Segment, error) {
+func (c *Client) GetSegments(ctx context.Context, listID string, params ...Parameters) ([]*Segment, error) {
 
 	p := requestParameters(params)
-	response, err := c.Get(slashJoin(ListsURL, listID, SegmentsURL), p)
+	response, err := c.Get(ctx, slashJoin(ListsURL, listID, SegmentsURL), p)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"list_id": listID,
@@ -153,7 +154,7 @@ func (c *Client) GetSegments(listID string, params ...Parameters) ([]*Segment, e
 	// Add internal client
 	segments := []*Segment{}
 	for _, segment := range segmentsResponse.Segments {
-		segment.client = c
+		segment.Client = c
 		segments = append(segments, segment)
 	}
 
@@ -161,8 +162,8 @@ func (c *Client) GetSegments(listID string, params ...Parameters) ([]*Segment, e
 
 }
 
-func (c *Client) GetSegment(id string, listID string) (*Segment, error) {
-	response, err := c.Get(slashJoin(ListsURL, listID, SegmentsURL, id), nil)
+func (c *Client) GetSegment(ctx context.Context, id string, listID string) (*Segment, error) {
+	response, err := c.Get(ctx, slashJoin(ListsURL, listID, SegmentsURL, id), nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"list_id":    listID,
@@ -183,15 +184,15 @@ func (c *Client) GetSegment(id string, listID string) (*Segment, error) {
 		return nil, err
 	}
 
-	segment.client = c
+	segment.Client = c
 
 	return segment, nil
 }
 
 // GetMembers returns all members in this Segment.
-func (s *Segment) GetMembers(params ...Parameters) ([]*Member, error) {
+func (s *Segment) GetMembers(ctx context.Context, params ...Parameters) ([]*Member, error) {
 	p := requestParameters(params)
-	response, err := s.client.Get(slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID), MembersURL), p)
+	response, err := s.Client.Get(ctx, slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID), MembersURL), p)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"list_id":    s.ListID,
@@ -210,16 +211,16 @@ func (s *Segment) GetMembers(params ...Parameters) ([]*Member, error) {
 	// Add internal client
 	members := []*Member{}
 	for _, member := range membersResponse.Members {
-		member.client = s.client
+		member.Client = s.Client
 		members = append(members, member)
 	}
 
 	return members, nil
 }
 
-func (s *Segment) Delete() error {
+func (s *Segment) Delete(ctx context.Context) error {
 
-	if s.client == nil {
+	if s.Client == nil {
 		return ErrorNoClient
 	}
 
@@ -228,7 +229,7 @@ func (s *Segment) Delete() error {
 		return err
 	}
 
-	err := s.client.Delete(slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID)))
+	err := s.Client.Delete(ctx, slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID)))
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"list_id":    s.ListID,
@@ -242,9 +243,9 @@ func (s *Segment) Delete() error {
 }
 
 // Update returns a new Segment object with the updated values
-func (s *Segment) Update(data *UpdateSegment) (*Segment, error) {
+func (s *Segment) Update(ctx context.Context, data *UpdateSegment) (*Segment, error) {
 
-	if s.client == nil {
+	if s.Client == nil {
 		return nil, ErrorNoClient
 	}
 
@@ -255,7 +256,7 @@ func (s *Segment) Update(data *UpdateSegment) (*Segment, error) {
 
 	// If the segment was previously deleted we need to use a PATCH request,
 	// otherwhise the API will tell us it's gone.
-	response, err := s.client.Patch(slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID)), nil, data)
+	response, err := s.Client.Patch(ctx, slashJoin(ListsURL, s.ListID, SegmentsURL, strconv.Itoa(s.ID)), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"list_id":    s.ListID,
@@ -276,7 +277,7 @@ func (s *Segment) Update(data *UpdateSegment) (*Segment, error) {
 		return nil, err
 	}
 
-	segment.client = s.client
+	segment.Client = s.Client
 
 	return segment, nil
 }

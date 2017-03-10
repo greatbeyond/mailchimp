@@ -5,14 +5,17 @@
 
 package mailchimp
 
-import "net/http"
+import (
+	"context"
+	"net/http"
+)
 
 type MailchimpClient interface {
-	Get(resource string, parameters map[string]interface{}) ([]byte, error)
-	Post(resource string, parameters map[string]interface{}, data interface{}) ([]byte, error)
-	Patch(resource string, parameters map[string]interface{}, data interface{}) ([]byte, error)
-	Put(resource string, parameters map[string]interface{}, data interface{}) ([]byte, error)
-	Delete(resource string) error
+	Get(ctx context.Context, resource string, parameters map[string]interface{}) ([]byte, error)
+	Post(ctx context.Context, resource string, parameters map[string]interface{}, data interface{}) ([]byte, error)
+	Patch(ctx context.Context, resource string, parameters map[string]interface{}, data interface{}) ([]byte, error)
+	Put(ctx context.Context, resource string, parameters map[string]interface{}, data interface{}) ([]byte, error)
+	Delete(ctx context.Context, resource string) error
 
 	Do(request *http.Request) ([]byte, error)
 }

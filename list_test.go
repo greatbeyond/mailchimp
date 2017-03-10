@@ -6,8 +6,8 @@
 package mailchimp
 
 import (
+	"context"
 	"net/http"
-	"strings"
 
 	t "github.com/greatbeyond/mailchimp/testing"
 
@@ -19,6 +19,7 @@ var _ = check.Suite(&ListSuite{})
 type ListSuite struct {
 	client *Client
 	server *t.MockServer
+	ctx    context.Context
 }
 
 func (s *ListSuite) SetUpSuite(c *check.C) {
@@ -29,16 +30,18 @@ func (s *ListSuite) SetUpTest(c *check.C) {
 	s.server = t.NewMockServer()
 	s.server.SetChecker(c)
 
-	s.client = NewClient("b12824bd84759ef84abc67fd789e7570-us13")
+	s.client = NewClient()
 	s.client.HTTPClient = s.server.HTTPClient
-	s.client.APIURL = strings.Replace(s.client.APIURL, "https://", "http://", 1)
+
+	s.ctx = NewContextWithToken(context.Background(), "b12824bd84759ef84abc67fd789e7570-us13")
+	s.ctx = NewContextWithURL(s.ctx, "http://us13.api.mailchimp.com/3.0/")
 }
 
 func (s *ListSuite) TearDownTest(c *check.C) {}
 
 func (s *ListSuite) Test_NewList(c *check.C) {
 	mem := s.client.NewList()
-	c.Assert(mem.client, check.Not(check.IsNil))
+	c.Assert(mem.Client, check.Not(check.IsNil))
 }
 
 // --------------------------------------------------------------
@@ -78,7 +81,7 @@ func (s *ListSuite) Test_CreateList_Normal(c *check.C) {
 		},
 	})
 
-	list, err := s.client.CreateList(create)
+	list, err := s.client.CreateList(s.ctx, create)
 	c.Assert(err, check.IsNil)
 	c.Assert(list, check.DeepEquals, &List{
 		ID:   "1510500e0b",
@@ -130,7 +133,7 @@ func (s *ListSuite) Test_CreateList_Normal(c *check.C) {
 			LastUnsubDate:             "",
 		},
 
-		client: s.client,
+		Client: s.client,
 	})
 }
 
@@ -156,7 +159,7 @@ func (s *ListSuite) Test_CreateList_MissingName(c *check.C) {
 		},
 		EmailTypeOption: true,
 	}
-	_, err := s.client.CreateList(create)
+	_, err := s.client.CreateList(s.ctx, create)
 	c.Assert(err, check.ErrorMatches, "missing field: Name")
 }
 
@@ -182,7 +185,7 @@ func (s *ListSuite) Test_CreateList_MissingContact(c *check.C) {
 		},
 		EmailTypeOption: true,
 	}
-	_, err := s.client.CreateList(create)
+	_, err := s.client.CreateList(s.ctx, create)
 	c.Assert(err, check.ErrorMatches, "missing field: Contact")
 }
 
@@ -208,7 +211,7 @@ func (s *ListSuite) Test_CreateList_MissingPermissionReminder(c *check.C) {
 		},
 		EmailTypeOption: true,
 	}
-	_, err := s.client.CreateList(create)
+	_, err := s.client.CreateList(s.ctx, create)
 	c.Assert(err, check.ErrorMatches, "missing field: PermissionReminder")
 }
 
@@ -234,7 +237,7 @@ func (s *ListSuite) Test_CreateList_MissingCampaignDefaults(c *check.C) {
 		// },
 		EmailTypeOption: true,
 	}
-	_, err := s.client.CreateList(create)
+	_, err := s.client.CreateList(s.ctx, create)
 	c.Assert(err, check.ErrorMatches, "missing field: CampaignDefaults")
 }
 
@@ -267,7 +270,7 @@ func (s *ListSuite) Test_CreateList_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	list, err := s.client.CreateList(create)
+	list, err := s.client.CreateList(s.ctx, create)
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(list, check.IsNil)
 }
@@ -301,7 +304,7 @@ func (s *ListSuite) Test_CreateList_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	list, err := s.client.CreateList(create)
+	list, err := s.client.CreateList(s.ctx, create)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(list, check.IsNil)
 }
@@ -320,10 +323,10 @@ func (s *ListSuite) Test_GetLists_Normal(c *check.C) {
 		},
 	})
 
-	lists, err := s.client.GetLists()
+	lists, err := s.client.GetLists(s.ctx)
 	c.Assert(err, check.IsNil)
 	c.Assert(len(lists), check.Equals, 1)
-	c.Assert(lists[0].client, check.Not(check.IsNil))
+	c.Assert(lists[0].Client, check.Not(check.IsNil))
 	c.Assert(lists[0], check.DeepEquals, &List{
 		ID:   "1510500e0b",
 		Name: "Freddie's Favorite Hats",
@@ -373,7 +376,7 @@ func (s *ListSuite) Test_GetLists_Normal(c *check.C) {
 			LastSubDate:               "",
 			LastUnsubDate:             "",
 		},
-		client: s.client,
+		Client: s.client,
 	})
 
 }
@@ -385,7 +388,7 @@ func (s *ListSuite) Test_GetLists_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	List, err := s.client.GetLists()
+	List, err := s.client.GetLists(s.ctx)
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(List, check.IsNil)
 }
@@ -397,7 +400,7 @@ func (s *ListSuite) Test_GetLists_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	List, err := s.client.GetLists()
+	List, err := s.client.GetLists(s.ctx)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(List, check.IsNil)
 }
@@ -416,9 +419,9 @@ func (s *ListSuite) Test_GetList_Normal(c *check.C) {
 		},
 	})
 
-	list, err := s.client.GetList("1510500e0b")
+	list, err := s.client.GetList(s.ctx, "1510500e0b")
 	c.Assert(err, check.IsNil)
-	c.Assert(list.client, check.Not(check.IsNil))
+	c.Assert(list.Client, check.Not(check.IsNil))
 	c.Assert(list, check.DeepEquals, &List{
 		ID:   "1510500e0b",
 		Name: "Freddie's Favorite Hats",
@@ -469,7 +472,7 @@ func (s *ListSuite) Test_GetList_Normal(c *check.C) {
 			LastUnsubDate:             "",
 		},
 
-		client: s.client,
+		Client: s.client,
 	})
 
 }
@@ -481,7 +484,7 @@ func (s *ListSuite) Test_GetList_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	list, err := s.client.GetList("1510500e0b")
+	list, err := s.client.GetList(s.ctx, "1510500e0b")
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(list, check.IsNil)
 }
@@ -493,7 +496,7 @@ func (s *ListSuite) Test_GetList_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	list, err := s.client.GetList("1510500e0b")
+	list, err := s.client.GetList(s.ctx, "1510500e0b")
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(list, check.IsNil)
 }
@@ -505,7 +508,7 @@ func (s *ListSuite) Test_Delete_Normal(c *check.C) {
 
 	list := &List{
 		ID:     "1510500e0b",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -517,7 +520,7 @@ func (s *ListSuite) Test_Delete_Normal(c *check.C) {
 		},
 	})
 
-	err := list.Delete()
+	err := list.Delete(s.ctx)
 	c.Assert(err, check.IsNil)
 
 }
@@ -526,14 +529,14 @@ func (s *ListSuite) Test_Delete_NoClient(c *check.C) {
 	list := &List{
 		ID: "1510500e0b",
 	}
-	err := list.Delete()
+	err := list.Delete(s.ctx)
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
 func (s *ListSuite) Test_Delete_UnknownResponse(c *check.C) {
 	list := &List{
 		ID:     "1510500e0b",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -542,7 +545,7 @@ func (s *ListSuite) Test_Delete_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	err := list.Delete()
+	err := list.Delete(s.ctx)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 
 }
@@ -555,7 +558,7 @@ func (s *ListSuite) Test_Update_Normal(c *check.C) {
 	list := &List{
 		ID: "1510500e0b",
 
-		client: s.client,
+		Client: s.client,
 	}
 
 	update := &UpdateList{
@@ -572,7 +575,7 @@ func (s *ListSuite) Test_Update_Normal(c *check.C) {
 		},
 	})
 
-	upd, err := list.Update(update)
+	upd, err := list.Update(s.ctx, update)
 	c.Assert(err, check.IsNil)
 	c.Assert(upd, check.DeepEquals, &List{
 		ID:   "1510500e0b",
@@ -624,7 +627,7 @@ func (s *ListSuite) Test_Update_Normal(c *check.C) {
 			LastUnsubDate:             "",
 		},
 
-		client: s.client,
+		Client: s.client,
 	})
 }
 
@@ -633,7 +636,7 @@ func (s *ListSuite) Test_Update_Missing_Client(c *check.C) {
 		ID: "1510500e0b",
 	}
 	update := &UpdateList{}
-	_, err := list.Update(update)
+	_, err := list.Update(s.ctx, update)
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
@@ -643,7 +646,7 @@ func (s *ListSuite) Test_Update_BadResponse(c *check.C) {
 	}
 	list := &List{
 		ID:     "1510500e0b",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -652,7 +655,7 @@ func (s *ListSuite) Test_Update_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	upd, err := list.Update(updSegm)
+	upd, err := list.Update(s.ctx, updSegm)
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(upd, check.IsNil)
 }
@@ -663,7 +666,7 @@ func (s *ListSuite) Test_Update_UnknownResponse(c *check.C) {
 	}
 	list := &List{
 		ID:     "1510500e0b",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -672,7 +675,7 @@ func (s *ListSuite) Test_Update_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	upd, err := list.Update(updSegm)
+	upd, err := list.Update(s.ctx, updSegm)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(upd, check.IsNil)
 }

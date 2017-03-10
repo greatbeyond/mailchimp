@@ -6,8 +6,8 @@
 package mailchimp
 
 import (
+	"context"
 	"net/http"
-	"strings"
 
 	t "github.com/greatbeyond/mailchimp/testing"
 
@@ -19,6 +19,7 @@ var _ = check.Suite(&MemberSuite{})
 type MemberSuite struct {
 	client *Client
 	server *t.MockServer
+	ctx    context.Context
 }
 
 func (s *MemberSuite) SetUpSuite(c *check.C) {
@@ -29,9 +30,12 @@ func (s *MemberSuite) SetUpTest(c *check.C) {
 	s.server = t.NewMockServer()
 	s.server.SetChecker(c)
 
-	s.client = NewClient("b12824bd84759ef84abc67fd789e7570-us13")
+	s.client = NewClient()
 	s.client.HTTPClient = s.server.HTTPClient
-	s.client.APIURL = strings.Replace(s.client.APIURL, "https://", "http://", 1)
+
+	s.ctx = NewContextWithToken(context.Background(), "b12824bd84759ef84abc67fd789e7570-us13")
+	// We need http to use the mock server
+	s.ctx = NewContextWithURL(s.ctx, "http://us13.api.mailchimp.com/3.0/")
 }
 
 func (s *MemberSuite) TearDownTest(c *check.C) {}
@@ -39,7 +43,7 @@ func (s *MemberSuite) TearDownTest(c *check.C) {}
 func (s *MemberSuite) Test_NewMember(c *check.C) {
 	mem := s.client.NewMember("abc23d")
 	c.Assert(mem.ListID, check.Equals, "abc23d")
-	c.Assert(mem.client, check.Not(check.IsNil))
+	c.Assert(mem.Client, check.Not(check.IsNil))
 }
 
 // --------------------------------------------------------------
@@ -74,7 +78,7 @@ func (s *MemberSuite) Test_CreateMember_Normal(c *check.C) {
 		},
 	})
 
-	member, err := s.client.CreateMember(create, "57afe96172")
+	member, err := s.client.CreateMember(s.ctx, create, "57afe96172")
 	c.Assert(err, check.IsNil)
 	c.Assert(member, check.DeepEquals, &Member{
 		ID:            "852aaa9532cb36adfb5e9fef7a4206a9",
@@ -112,7 +116,7 @@ func (s *MemberSuite) Test_CreateMember_Normal(c *check.C) {
 		},
 		ListID: "57afe96172",
 
-		client: s.client,
+		Client: s.client,
 	})
 }
 
@@ -122,7 +126,7 @@ func (s *MemberSuite) Test_CreateMember_MissingStatus(c *check.C) {
 		EmailType:    HTML,
 		// Status: Subscribed,
 	}
-	_, err := s.client.CreateMember(create, "57afe96172")
+	_, err := s.client.CreateMember(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "missing field: Status")
 }
 
@@ -132,13 +136,13 @@ func (s *MemberSuite) Test_CreateMember_MissingEmailAddress(c *check.C) {
 		EmailType: HTML,
 		Status:    Subscribed,
 	}
-	_, err := s.client.CreateMember(create, "57afe96172")
+	_, err := s.client.CreateMember(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "missing field: EmailAddress")
 }
 
 func (s *MemberSuite) Test_CreateMember_MissingListID(c *check.C) {
 	create := &CreateMember{}
-	_, err := s.client.CreateMember(create, "")
+	_, err := s.client.CreateMember(s.ctx, create, "")
 	c.Assert(err, check.ErrorMatches, "missing argument: listID")
 }
 
@@ -155,7 +159,7 @@ func (s *MemberSuite) Test_CreateMember_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	member, err := s.client.CreateMember(create, "57afe96172")
+	member, err := s.client.CreateMember(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(member, check.IsNil)
 }
@@ -173,7 +177,7 @@ func (s *MemberSuite) Test_CreateMember_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	member, err := s.client.CreateMember(create, "57afe96172")
+	member, err := s.client.CreateMember(s.ctx, create, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(member, check.IsNil)
 }
@@ -192,10 +196,10 @@ func (s *MemberSuite) Test_GetMembers_Normal(c *check.C) {
 		},
 	})
 
-	members, err := s.client.GetMembers("57afe96172")
+	members, err := s.client.GetMembers(s.ctx, "57afe96172")
 	c.Assert(err, check.IsNil)
 	c.Assert(len(members), check.Equals, 1)
-	c.Assert(members[0].client, check.Not(check.IsNil))
+	c.Assert(members[0].Client, check.Not(check.IsNil))
 	c.Assert(members[0], check.DeepEquals, &Member{
 		ID:            "852aaa9532cb36adfb5e9fef7a4206a9",
 		EmailAddress:  "urist.mcvankab+3@freddiesjokes.com",
@@ -234,7 +238,7 @@ func (s *MemberSuite) Test_GetMembers_Normal(c *check.C) {
 		},
 		ListID: "57afe96172",
 
-		client: s.client,
+		Client: s.client,
 	})
 
 }
@@ -246,7 +250,7 @@ func (s *MemberSuite) Test_GetMembers_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	Member, err := s.client.GetMembers("57afe96172")
+	Member, err := s.client.GetMembers(s.ctx, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(Member, check.IsNil)
 }
@@ -258,7 +262,7 @@ func (s *MemberSuite) Test_GetMembers_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	Member, err := s.client.GetMembers("57afe96172")
+	Member, err := s.client.GetMembers(s.ctx, "57afe96172")
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(Member, check.IsNil)
 }
@@ -277,9 +281,9 @@ func (s *MemberSuite) Test_GetMember_Normal(c *check.C) {
 		},
 	})
 
-	member, err := s.client.GetMember("852aaa9532cb36adfb5e9fef7a4206a9", "57afe96172")
+	member, err := s.client.GetMember(s.ctx, "852aaa9532cb36adfb5e9fef7a4206a9", "57afe96172")
 	c.Assert(err, check.IsNil)
-	c.Assert(member.client, check.Not(check.IsNil))
+	c.Assert(member.Client, check.Not(check.IsNil))
 	c.Assert(member, check.DeepEquals, &Member{
 		ID:            "852aaa9532cb36adfb5e9fef7a4206a9",
 		EmailAddress:  "urist.mcvankab+3@freddiesjokes.com",
@@ -318,7 +322,7 @@ func (s *MemberSuite) Test_GetMember_Normal(c *check.C) {
 		},
 		ListID: "57afe96172",
 
-		client: s.client,
+		Client: s.client,
 	})
 
 }
@@ -330,7 +334,7 @@ func (s *MemberSuite) Test_GetMember_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	member, err := s.client.GetMember("0", "57afe96172")
+	member, err := s.client.GetMember(s.ctx, "0", "57afe96172")
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(member, check.IsNil)
 }
@@ -342,7 +346,7 @@ func (s *MemberSuite) Test_GetMember_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	member, err := s.client.GetMember("0", "57afe96172")
+	member, err := s.client.GetMember(s.ctx, "0", "57afe96172")
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(member, check.IsNil)
 }
@@ -355,7 +359,7 @@ func (s *MemberSuite) Test_Delete_Normal(c *check.C) {
 	member := &Member{
 		ID:     "852aaa9532cb36adfb5e9fef7a4206a9",
 		ListID: "57afe96172",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -367,7 +371,7 @@ func (s *MemberSuite) Test_Delete_Normal(c *check.C) {
 		},
 	})
 
-	err := member.Delete()
+	err := member.Delete(s.ctx)
 	c.Assert(err, check.IsNil)
 
 }
@@ -377,7 +381,7 @@ func (s *MemberSuite) Test_Delete_NoClient(c *check.C) {
 		ID:     "852aaa9532cb36adfb5e9fef7a4206a9",
 		ListID: "57afe96172",
 	}
-	err := member.Delete()
+	err := member.Delete(s.ctx)
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
@@ -385,7 +389,7 @@ func (s *MemberSuite) Test_Delete_UnknownResponse(c *check.C) {
 	member := &Member{
 		ID:     "852aaa9532cb36adfb5e9fef7a4206a9",
 		ListID: "57afe96172",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -394,7 +398,7 @@ func (s *MemberSuite) Test_Delete_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	err := member.Delete()
+	err := member.Delete(s.ctx)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 
 }
@@ -407,7 +411,7 @@ func (s *MemberSuite) Test_Update_Normal(c *check.C) {
 	member := &Member{
 		ID:     "852aaa9532cb36adfb5e9fef7a4206a9",
 		ListID: "57afe96172",
-		client: s.client,
+		Client: s.client,
 	}
 
 	update := &UpdateMember{
@@ -424,7 +428,7 @@ func (s *MemberSuite) Test_Update_Normal(c *check.C) {
 		},
 	})
 
-	upd, err := member.Update(update)
+	upd, err := member.Update(s.ctx, update)
 	c.Assert(err, check.IsNil)
 	c.Assert(upd, check.DeepEquals, &Member{
 		ID:            "852aaa9532cb36adfb5e9fef7a4206a9",
@@ -464,7 +468,7 @@ func (s *MemberSuite) Test_Update_Normal(c *check.C) {
 		},
 		ListID: "57afe96172",
 
-		client: s.client,
+		Client: s.client,
 	})
 }
 
@@ -474,7 +478,7 @@ func (s *MemberSuite) Test_Update_Missing_Client(c *check.C) {
 		ListID: "57afe96172",
 	}
 	update := &UpdateMember{}
-	_, err := member.Update(update)
+	_, err := member.Update(s.ctx, update)
 	c.Assert(err, check.ErrorMatches, "no client assigned by parent")
 }
 
@@ -485,7 +489,7 @@ func (s *MemberSuite) Test_Update_BadResponse(c *check.C) {
 	member := &Member{
 		ID:     "852aaa9532cb36adfb5e9fef7a4206a9",
 		ListID: "57afe96172",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -494,7 +498,7 @@ func (s *MemberSuite) Test_Update_BadResponse(c *check.C) {
 		Body:   `{ bad json response`,
 	})
 
-	upd, err := member.Update(updSegm)
+	upd, err := member.Update(s.ctx, updSegm)
 	c.Assert(err, check.ErrorMatches, "invalid character.*")
 	c.Assert(upd, check.IsNil)
 }
@@ -506,7 +510,7 @@ func (s *MemberSuite) Test_Update_UnknownResponse(c *check.C) {
 	member := &Member{
 		ID:     "852aaa9532cb36adfb5e9fef7a4206a9",
 		ListID: "57afe96172",
-		client: s.client,
+		Client: s.client,
 	}
 
 	s.server.AddResponse(&t.MockResponse{
@@ -515,7 +519,7 @@ func (s *MemberSuite) Test_Update_UnknownResponse(c *check.C) {
 		Body:   `{}`,
 	})
 
-	upd, err := member.Update(updSegm)
+	upd, err := member.Update(s.ctx, updSegm)
 	c.Assert(err, check.ErrorMatches, "Response error.*")
 	c.Assert(upd, check.IsNil)
 }

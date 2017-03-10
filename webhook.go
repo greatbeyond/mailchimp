@@ -6,6 +6,7 @@
 package mailchimp
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 
@@ -40,11 +41,11 @@ type Webhook struct {
 	Links json.RawMessage `json:"_links"`
 
 	// Internal
-	client MailchimpClient
+	Client MailchimpClient `json:"-"`
 }
 
 // SetClient fulfills ClientType
-func (m *Webhook) SetClient(c MailchimpClient) { m.client = c }
+func (w *Webhook) SetClient(c MailchimpClient) { w.Client = c }
 
 // WebhookEvents defines all valid fields for webhook events.
 type WebhookEvents struct {
@@ -92,13 +93,13 @@ type CreateWebhook struct {
 // CreateWebhook adds a webhook to a list. Mailchimp will send events through this webhook on:
 // subcribes, unsubscribes, profile updates, email address changes and campaign sending status.
 // Returns webhook ID on success, otherwise error.
-func (c *Client) CreateWebhook(request *CreateWebhook) (*Webhook, error) {
-	_, err := c.GetList(request.ListID)
+func (c *Client) CreateWebhook(ctx context.Context, request *CreateWebhook) (*Webhook, error) {
+	_, err := c.GetList(ctx, request.ListID)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := c.Post(slashJoin(ListsURL, request.ListID, WebhooksURL), nil, request)
+	response, err := c.Post(ctx, slashJoin(ListsURL, request.ListID, WebhooksURL), nil, request)
 
 	var webhook *Webhook
 	err = json.Unmarshal(response, &webhook)
@@ -107,7 +108,7 @@ func (c *Client) CreateWebhook(request *CreateWebhook) (*Webhook, error) {
 	}
 
 	// Add internal client
-	webhook.client = c
+	webhook.Client = c
 
 	return webhook, nil
 }
@@ -122,8 +123,8 @@ type getWebhooksResponse struct {
 
 // GetWebhooks returns information from all webhooks on a list.
 // Returns webhook info on success, otherwise nil and error.
-func (c *Client) GetWebhooks(listID string) ([]*Webhook, error) {
-	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL), nil)
+func (c *Client) GetWebhooks(ctx context.Context, listID string) ([]*Webhook, error) {
+	response, err := c.Get(ctx, slashJoin(ListsURL, listID, WebhooksURL), nil)
 	if err != nil {
 		Log.Error(err.Error(), caller())
 		return nil, err
@@ -139,7 +140,7 @@ func (c *Client) GetWebhooks(listID string) ([]*Webhook, error) {
 	// Add internal client
 	webhooks := []*Webhook{}
 	for _, webhook := range webhooksResponse.Webhooks {
-		webhook.client = c
+		webhook.Client = c
 		webhooks = append(webhooks, webhook)
 	}
 
@@ -147,8 +148,8 @@ func (c *Client) GetWebhooks(listID string) ([]*Webhook, error) {
 }
 
 // GetWebhook returns information for a single webhook.
-func (c *Client) GetWebhook(listID string, webhookID string) (*Webhook, error) {
-	response, err := c.Get(slashJoin(ListsURL, listID, WebhooksURL, webhookID), nil)
+func (c *Client) GetWebhook(ctx context.Context, listID string, webhookID string) (*Webhook, error) {
+	response, err := c.Get(ctx, slashJoin(ListsURL, listID, WebhooksURL, webhookID), nil)
 	if err != nil {
 		Log.Error(err.Error(), caller())
 		return nil, err
@@ -162,18 +163,18 @@ func (c *Client) GetWebhook(listID string, webhookID string) (*Webhook, error) {
 	}
 
 	// Add internal client
-	webhook.client = c
+	webhook.Client = c
 
 	return webhook, nil
 }
 
 // DeleteWebhook removes a webhook from mailchimp.
 // Returns error on failure
-func (w *Webhook) DeleteWebhook() error {
-	if w.client == nil {
+func (w *Webhook) DeleteWebhook(ctx context.Context) error {
+	if w.Client == nil {
 		return ErrorNoClient
 	}
-	return w.client.Delete(slashJoin(ListsURL, w.ListID, WebhooksURL, w.ID))
+	return w.Client.Delete(ctx, slashJoin(ListsURL, w.ListID, WebhooksURL, w.ID))
 }
 
 // ------------------------------------------------------------------------------

@@ -6,6 +6,7 @@
 package mailchimp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -78,11 +79,11 @@ type List struct {
 	Stats ListStats `json:"stats,omitempty"`
 
 	// Internal
-	client MailchimpClient
+	Client MailchimpClient `json:"-"`
 }
 
 // SetClient fulfills ClientType
-func (l *List) SetClient(c MailchimpClient) { l.client = c }
+func (l *List) SetClient(c MailchimpClient) { l.Client = c }
 
 // Contact for list information
 type Contact struct {
@@ -171,7 +172,7 @@ type UpdateList CreateList
 //	c.NewList(23).Update(params)
 func (c *Client) NewList(id ...string) *List {
 	s := &List{
-		client: c,
+		Client: c,
 	}
 	if len(id) > 0 {
 		s.ID = id[0]
@@ -180,14 +181,13 @@ func (c *Client) NewList(id ...string) *List {
 }
 
 // CreateList Creates a member object and inserts it
-func (c *Client) CreateList(data *CreateList) (*List, error) {
-
+func (c *Client) CreateList(ctx context.Context, data *CreateList) (*List, error) {
 	fields := []string{"Name", "Contact", "PermissionReminder", "CampaignDefaults"}
 	if err := hasFields(*data, fields...); err != nil {
 		return nil, err
 	}
 
-	response, err := c.Post(ListsURL, nil, data)
+	response, err := c.Post(ctx, ListsURL, nil, data)
 	if err != nil {
 		Log.Error(err.Error(), caller())
 		return nil, err
@@ -200,7 +200,7 @@ func (c *Client) CreateList(data *CreateList) (*List, error) {
 		return nil, err
 	}
 
-	list.client = c
+	list.Client = c
 
 	return list, nil
 }
@@ -210,8 +210,8 @@ type getListsResponse struct {
 	TotalItems int     `json:"total_items"`
 }
 
-func (c *Client) GetLists() ([]*List, error) {
-	response, err := c.Get(ListsURL, nil)
+func (c *Client) GetLists(ctx context.Context) ([]*List, error) {
+	response, err := c.Get(ctx, ListsURL, nil)
 	if err != nil {
 		Log.Error(err.Error(), caller())
 		return nil, err
@@ -227,7 +227,7 @@ func (c *Client) GetLists() ([]*List, error) {
 	// Add internal client
 	lists := []*List{}
 	for _, list := range listsResponse.Lists {
-		list.client = c
+		list.Client = c
 		lists = append(lists, list)
 	}
 
@@ -235,8 +235,8 @@ func (c *Client) GetLists() ([]*List, error) {
 }
 
 // GetList returns a single list by id
-func (c *Client) GetList(id string) (*List, error) {
-	response, err := c.Get(slashJoin(ListsURL, id), nil)
+func (c *Client) GetList(ctx context.Context, id string) (*List, error) {
+	response, err := c.Get(ctx, slashJoin(ListsURL, id), nil)
 	if err != nil {
 		Log.Error(err.Error(), caller())
 		return nil, err
@@ -252,19 +252,18 @@ func (c *Client) GetList(id string) (*List, error) {
 		return nil, fmt.Errorf("unable to unmarshal response")
 	}
 
-	list.client = c
+	list.Client = c
 
 	return list, nil
 }
 
 //Update returns a new List object with the updated values
-func (l *List) Update(data *UpdateList) (*List, error) {
-
-	if l.client == nil {
+func (l *List) Update(ctx context.Context, data *UpdateList) (*List, error) {
+	if l.Client == nil {
 		return nil, ErrorNoClient
 	}
 
-	response, err := l.client.Patch(slashJoin(ListsURL, l.ID), nil, data)
+	response, err := l.Client.Patch(ctx, slashJoin(ListsURL, l.ID), nil, data)
 	if err != nil {
 		Log.Error(err.Error(), caller())
 		return nil, err
@@ -277,19 +276,17 @@ func (l *List) Update(data *UpdateList) (*List, error) {
 		return nil, err
 	}
 
-	list.client = l.client
+	list.Client = l.Client
 
 	return list, nil
 }
 
 // Delete removes the list
-func (l *List) Delete() error {
-
-	if l.client == nil {
+func (l *List) Delete(ctx context.Context) error {
+	if l.Client == nil {
 		return ErrorNoClient
 	}
-
-	return l.client.Delete(slashJoin(ListsURL, l.ID))
+	return l.Client.Delete(ctx, slashJoin(ListsURL, l.ID))
 }
 
 // TimeCreated converts DateCreated to a time.Time object

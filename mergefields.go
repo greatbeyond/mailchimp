@@ -6,6 +6,7 @@
 package mailchimp
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -62,11 +63,11 @@ type MergeField struct {
 	ListID string `json:"list_id,omitempty"`
 
 	// Internal
-	client MailchimpClient
+	Client MailchimpClient `json:"-"`
 }
 
 // SetClient fulfills ClientType
-func (m *MergeField) SetClient(c MailchimpClient) { m.client = c }
+func (m *MergeField) SetClient(c MailchimpClient) { m.Client = c }
 
 type MergeFieldType string
 
@@ -99,7 +100,7 @@ type UpdateMergeField CreateMergeField
 //	c.NewMergeField(23).Update(params)
 func (c *Client) NewMergeField(id ...int) *MergeField {
 	s := &MergeField{
-		client: c,
+		Client: c,
 	}
 	if len(id) > 0 {
 		s.MergeID = id[0]
@@ -108,8 +109,7 @@ func (c *Client) NewMergeField(id ...int) *MergeField {
 }
 
 // CreateMergeField Creates a field object and inserts it
-func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*MergeField, error) {
-
+func (c *Client) CreateMergeField(ctx context.Context, data *CreateMergeField, listID string) (*MergeField, error) {
 	if listID == "" {
 		return nil, fmt.Errorf("missing argument: listID")
 	}
@@ -123,7 +123,7 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		return nil, fmt.Errorf("tag length over limit (10)")
 	}
 
-	response, err := c.Post(slashJoin(ListsURL, listID, MergeFieldsURL), nil, data)
+	response, err := c.Post(ctx, slashJoin(ListsURL, listID, MergeFieldsURL), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"listID": listID,
@@ -142,7 +142,7 @@ func (c *Client) CreateMergeField(data *CreateMergeField, listID string) (*Merge
 		return nil, err
 	}
 
-	field.client = c
+	field.Client = c
 
 	return field, nil
 }
@@ -154,10 +154,9 @@ type getMergeField struct {
 }
 
 // GetMergeFields fetches all merge fields
-func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeField, error) {
-
+func (c *Client) GetMergeFields(ctx context.Context, listID string, params ...Parameters) ([]*MergeField, error) {
 	p := requestParameters(params)
-	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL), p)
+	response, err := c.Get(ctx, slashJoin(ListsURL, listID, MergeFieldsURL), p)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"listID": listID,
@@ -175,7 +174,7 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 	// Add internal client
 	mergefields := []*MergeField{}
 	for _, mergefield := range mergefieldsResponse.MergeField {
-		mergefield.client = c
+		mergefield.Client = c
 		mergefields = append(mergefields, mergefield)
 	}
 
@@ -184,8 +183,8 @@ func (c *Client) GetMergeFields(listID string, params ...Parameters) ([]*MergeFi
 }
 
 // GetMergeField retrives a single merge field
-func (c *Client) GetMergeField(id int, listID string) (*MergeField, error) {
-	response, err := c.Get(slashJoin(ListsURL, listID, MergeFieldsURL, strconv.Itoa(id)), nil)
+func (c *Client) GetMergeField(ctx context.Context, id int, listID string) (*MergeField, error) {
+	response, err := c.Get(ctx, slashJoin(ListsURL, listID, MergeFieldsURL, strconv.Itoa(id)), nil)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"listID":   listID,
@@ -206,18 +205,17 @@ func (c *Client) GetMergeField(id int, listID string) (*MergeField, error) {
 		return nil, err
 	}
 
-	field.client = c
+	field.Client = c
 
 	return field, nil
 }
 
 //Delete remvoes the merge field
-func (m *MergeField) Delete() error {
-
-	if m.client == nil {
+func (m *MergeField) Delete(ctx context.Context) error {
+	if m.Client == nil {
 		return ErrorNoClient
 	}
-	err := m.client.Delete(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)))
+	err := m.Client.Delete(ctx, slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)))
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
@@ -231,15 +229,14 @@ func (m *MergeField) Delete() error {
 }
 
 // Update returns a existing MergeField object with the updated values
-func (m *MergeField) Update(data *UpdateMergeField) (*MergeField, error) {
-
-	if m.client == nil {
+func (m *MergeField) Update(ctx context.Context, data *UpdateMergeField) (*MergeField, error) {
+	if m.Client == nil {
 		return nil, ErrorNoClient
 	}
 
 	// If the field was previously deleted we need to use a PUT request,
 	// otherwhise the API will tell us it's gone.
-	response, err := m.client.Put(slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)), nil, data)
+	response, err := m.Client.Put(ctx, slashJoin(ListsURL, m.ListID, MergeFieldsURL, strconv.Itoa(m.MergeID)), nil, data)
 	if err != nil {
 		Log.WithFields(logrus.Fields{
 			"listID":   m.ListID,
@@ -260,7 +257,7 @@ func (m *MergeField) Update(data *UpdateMergeField) (*MergeField, error) {
 		return nil, err
 	}
 
-	field.client = m.client
+	field.Client = m.Client
 
 	return field, nil
 }
