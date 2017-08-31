@@ -16,7 +16,7 @@ import (
 
 	"errors"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 // Log is a global logging instance. Replace this with
