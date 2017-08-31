@@ -8,7 +8,7 @@ package testing
 import (
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 type MockClient struct{}

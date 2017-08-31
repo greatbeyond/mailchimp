@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Sirupsen/logrus"
 	t "github.com/greatbeyond/mailchimp/testing"
+	"github.com/sirupsen/logrus"
 	check "gopkg.in/check.v1"
 )
 

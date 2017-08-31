@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/Sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 )
 
 const MergeFieldsURL = "/merge-fields"
