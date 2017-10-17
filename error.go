@@ -5,7 +5,16 @@
 
 package mailchimp
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
+
+// ErrorNoClient will be returned when the receiver has no client
+// assigned by parent. Always create api objects by retrieving
+// them from the Client object. You can assign the client manually
+// at creation with Object{client: myClient}.
+var ErrorNoClient = fmt.Errorf("no client assigned by parent")
 
 // Error holds information about a failed call.
 // You should cast this to a mailchimp.Error to gain more information
@@ -46,16 +55,18 @@ type Error struct {
 
 // ErrorMessage contains field specific error information
 type ErrorMessage struct {
-	Field   string `json:"string"`
-	Message string `json:"string"`
+	Field   string `json:"field"`
+	Message string `json:"message"`
 }
 
-// ErrorNoClient will be returned when the receiver has no client
-// assigned by parent. Always create api objects by retrieving
-// them from the Client object. You can assign the client manually
-// at creation with Object{client: myClient}.
-var ErrorNoClient = fmt.Errorf("no client assigned by parent")
-
 func (e Error) Error() string {
-	return fmt.Sprintf("%s (%d): %s", e.Title, e.Status, e.Detail)
+	errorstr := ""
+	if len(e.Errors) > 0 {
+		errors := []string{}
+		for _, e := range e.Errors {
+			errors = append(errors, fmt.Sprintf("[%s: %s]", e.Field, e.Message))
+		}
+		errorstr = ": " + strings.Join(errors, ", ")
+	}
+	return fmt.Sprintf("%s (%d): %s%s", e.Title, e.Status, e.Detail, errorstr)
 }
