@@ -45,7 +45,7 @@ type Member struct {
 	// Subscriber’s current status.
 	Status MemberStatus `               json:"status,omitempty"`
 	// An individual merge var and value for a member.
-	MergeFields interface{} `           json:"merge_fields,omitempty"`
+	MergeFields map[string]interface{} `json:"merge_fields,omitempty"`
 	// The key of this object’s properties is the ID of the interest in question.
 	Interests map[string]bool `         json:"interests,omitempty"`
 	// Open and click rates for this subscriber.
@@ -95,7 +95,7 @@ type CreateMember struct {
 	Status MemberStatus `           json:"status,omitempty"`
 
 	// An individual merge var and value for a member.
-	MergeFields interface{} `       json:"merge_fields,omitempty"`
+	MergeFields map[string]interface{} `json:"merge_fields,omitempty"`
 
 	// The key of this object’s properties is the ID of the interest in question.
 	Interests map[string]bool `     json:"interests,omitempty"`
